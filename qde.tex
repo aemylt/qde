@@ -1,0 +1,154 @@
+% ****** Start of file apssamp.tex ******
+%
+%   This file is part of the APS files in the REVTeX 4.1 distribution.
+%   Version 4.1r of REVTeX, August 2010
+%
+%   Copyright (c) 2009, 2010 The American Physical Society.
+%
+%   See the REVTeX 4 README file for restrictions and more information.
+%
+% TeX'ing this file requires that you have AMS-LaTeX 2.0 installed
+% as well as the rest of the prerequisites for REVTeX 4.1
+%
+% See the REVTeX 4 README file
+% It also requires running BibTeX. The commands are as follows:
+%
+%  1)  latex apssamp.tex
+%  2)  bibtex apssamp
+%  3)  latex apssamp.tex
+%  4)  latex apssamp.tex
+%
+\documentclass[%
+ reprint,
+%superscriptaddress,
+%groupedaddress,
+%unsortedaddress,
+%runinaddress,
+%frontmatterverbose, 
+%preprint,
+%showpacs,preprintnumbers,
+%nofootinbib,
+%nobibnotes,
+%bibnotes,
+ amsmath,amssymb,
+ aps,
+ pra,
+%prb,
+%rmp,
+%prstab,
+%prstper,
+%floatfix,
+]{revtex4-1}
+
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+\usepackage{hyperref}% add hypertext capabilities
+%\usepackage[mathlines]{lineno}% Enable numbering of text and display math
+%\linenumbers\relax % Commence numbering lines
+
+%\usepackage[showframe,%Uncomment any one of the following lines to test 
+%%scale=0.7, marginratio={1:1, 2:3}, ignoreall,% default settings
+%%text={7in,10in},centering,
+%%margin=1.5in,
+%%total={6.5in,8.75in}, top=1.2in, left=0.9in, includefoot,
+%%height=10in,a5paper,hmargin={3cm,0.8in},
+%]{geometry}
+
+\usepackage{amsthm}
+\newtheorem{definition}{Definition}[section]
+
+\begin{document}
+
+\title{Quantum Digital Signatures}
+
+\author{Dominic Moylett}
+ \email{dominic.moylett@bristol.ac.uk}
+\affiliation{%
+ Quantum Engineering Centre for Doctoral Training\\
+ University of Bristol
+}%
+
+\date{\today}% It is always \today, today,
+             %  but any date may be explicitly specified
+
+\begin{abstract}
+While classical cryptography has relied on the assumed existence of one-way functions for proofs of security, quantum cryptography has given us information theoretically secure secret sharing. This has been achieved via quantum key distribution, utilising the uncertainty principle to limit what an eavesdropper can discover about a shared private key. Another application where we can have provably secure primitives is that of quantum digital signatures, which are used for authenticating that a message did come from a specific user. In this essay, we summarise the theoretical and experimental achievements in quantum digital signatures, and discuss their current limitations.
+\end{abstract}
+
+%\pacs{Valid PACS appear here}% PACS, the Physics and Astronomy
+                             % Classification Scheme.
+%\keywords{Suggested keywords}%Use showkeys class option if keyword
+                              %display desired
+\maketitle
+
+%\tableofcontents
+
+\section{Introduction}
+
+\section{Preliminaries}
+
+\begin{definition}
+A function $f:\mathbb{N}\rightarrow\mathbb{R}$ is negligible iff $\forall~ c > 0 ~\exists~ n_0 \in \mathbb{N}$ such that $\forall~ n \geq n_0, |f(n)| < \frac{1}{n^c}$.
+\end{definition}
+
+The most common example of negligible functions are functions of the form $2^{-p(n)}$ for some positive polynomial $p$.
+
+\section{Definition of Digital Signatures}
+
+A digital signature scheme consists of the following stages:
+
+\begin{description}
+\item[Key Sharing]Alice generates a signing key $sk$ and a verification key $vk$. The signing key is kept to herself, while the verification key is shared with other parties.
+\item[Message Signing]Alice takes a message $m$ and her signing key $sk$ and produces a signature for that message $s_m$.
+\item[Message Verification]Another party, Bob, takes a message $m$, Alice's verification key $vk$ and a signature $s_m$ and accepts if they think the message was sent and signed by Alice, otherwise they reject.
+\end{description}
+
+Another definition of verification used in, for example, \cite{quant-ph/0105032} has three different options for Bob. In this definition Bob can output:
+
+\begin{description}
+\item[1-ACC]He thinks the message-signature pair is valid and other parties will also find the message to be valid.
+\item[0-ACC]He thinks the message-signature pair is valid and other parties will not find the message to be valid.
+\item[REJ]He thinks the message-signature pair is invalid.
+\end{description}
+
+For security, we care about two properties with digital signatures:
+
+\begin{description}
+\item[Repudiation]The probability that Alice is able to convince Bob that a message-signature pair is valid and convince another party Charlie that the same pair is invalid is negligible in terms of the security parameter (often the length of the signature).
+\item[Forgery]The probability that Bob can in polynomial time create a valid message-signature pair he has not previously seen sent by Alice is negligible in terms of the security parameter.
+\end{description}
+
+\section{Lamport's One-Time Digital Signature}
+
+The original quantum digital signature was inspired from a classical family of digital signatures. This family of signatures were first published by Lamport\cite{lamp79}, and are reliant on the existence of one-way functions, defined below.
+
+\begin{definition}
+Let $\mathcal{X}, \mathcal{Y}$ be arbitrary sets. A function $f:\mathcal{X} \rightarrow \mathcal{Y}$ is one-way iff $f$ can be computed in polynomial time, but for any polynomial-time randomised adversary $f^{-1}:\mathcal{Y} \rightarrow \mathcal{X}$ and uniformly selected $x \in \mathcal{X}, \mathrm{Pr}[f(f^{-1}(x)) = f(x)]$ is negligible in terms of the length of $x$ in bits.
+\end{definition}
+
+For a one-way function $f$, then Lamport's one-time digital signature scheme is defined as follows for Alice signing an $m$-bit message:
+
+\begin{description}
+\item[Key Sharing]Alice generates $m$ pairs of uniformly selected random integers $(k^i_0, k^i_1)$. These will act as Alice's signing key, while the verification key will be the pairs $(f(k^i_0), f(k^i_1))$ for $i \in \{0,...,m-1\}$.
+\item[Message Signing]For each bit $m_i$ of Alice's message, she sends $k^i_{m_i}$ as her signature for that bit.
+\item[Message Verification]Given Alice's verification key $(v^i_0, v^i_1)$ and her signature $k^i_{m_i}$, her message $m_i$ can be verified by accepting if $v^i_{m_i} = f(k^i_{m_i})$ and rejecting otherwise.
+\end{description}
+
+Because this signature scheme is classical and deterministic, it is trivial for any verifying parties to share their copies of the message and verification keys and thus impossible for Alice to repudiate the message. As for forgery, if it is possible for an adversary to forge a message given only one message from Alice then it is possible to invert $f$, thus $f$ is not a one-way function.
+
+Note that this signature scheme can only be used for verifying a single $m$-bit message. This is because if an attacker has signatures for two different messages $M, M'$ then they can construct the valid signature for the new message $m_0m_1...m'_i...m_{m-1}$, where $m_i \neq m'_i$.
+
+\section{Quantum Digital Signatures}
+
+\section{Experimental Achievements}
+
+\section{Current Limitations}
+
+\section{Conclusion}
+
+\bibliography{qde}% Produces the bibliography via BibTeX.
+
+\end{document}
+%
+% ****** End of file apssamp.tex ******
