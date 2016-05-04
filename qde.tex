@@ -139,29 +139,39 @@ The first quantum digital signature was devised in 2001 by Daniel Gottesman and 
 \begin{description}
 \item[Key Generation]To sign a single bit, Alice generates pairs of $L$-bit strings $\{k^i_0, k^i_1\}, i \in \{0,...,M-1\}$ uniformly at random to act as her private key. Her public key is the pairs of quantum states $\{|f_{k^i_0}\rangle, |f_{k^i_1}\rangle\}, i \in \{0,...,M-1\}$.
 \item[Message Signing]To sign a bit $b$, Alice sends the tuple $(b, k^0_b, k^1_b,...,k^{M-1}_b)$.
-\item[Message Verification]To verify a signed message $(b, k^0_b, k^1_b,...,k^{M-1}_b)$, a recipient can use $f$ and swap tests \cite{PhysRevLett.87.167902} to determine if $|f_{k^i_b}\rangle$ matches the corresponding public key. The number of times a recipient finds that the swap test fails is noted as $s$. If $s \leq c_1M$ then the recipient accepts the message (\textbf{1-ACC}), and if $s \geq c_2M$ then the recipient rejects the message (\textbf{REJ}). In the case where $c_1 < s \leq c_2$, the recipient notes that the message is valid but might not be transferable (\textbf{0-ACC}).
+\item[Message Verification]To verify a signed message $(b, k^0_b, k^1_b,...,k^{M-1}_b)$, a recipient can use $f$ and SWAP tests \cite{PhysRevLett.87.167902} to determine if $|f_{k^i_b}\rangle$ matches the corresponding public key. The number of times a recipient finds that the SWAP test fails is noted as $s$. If $s \leq c_1M$ then the recipient accepts the message (\textbf{1-ACC}), and if $s \geq c_2M$ then the recipient rejects the message (\textbf{REJ}). In the case where $c_1 < s \leq c_2$, the recipient notes that the message is valid but might not be transferable (\textbf{0-ACC}).
 \end{description}
 
 Security against forgery is possible due to Holevo's theorem \cite{Hol73}, which states that even if an eavesdropper managed to acquire all $T$ copies of the public key, they could only extract at most $Tn$ bits of data, and thus their probability of correctly guessing a single $L$-bit string of the signing key is $2^{-(L-Tn)}$. If the distance between two public keys $|\langle f_k|f_{k'}\rangle| \leq \delta$ for $k \neq k'$, then the probability of an attacker managing to make a recipient accept a signature they weren't able to correctly guess is at most $\delta^2$. Thus by choosing $c_2$ smaller than the probability of a guessing adversary being accepted $(1 - \delta^2)(1 - 2^{1 - (L-Tn)})$, we can ensure that each recipient rejects a message with high probability.
 
-While protection against forgery is simple enough, it is harder to protect against repudiation. This is because in a two-recipient case, Alice can send Bob and Charlie different states. Due to the no-cloning theorem \cite{WZ82}, there is no perfect way for Bob and Charlie to check that their keys are the same. Gottesman and Chuang's solution is to introduce another step to the protocol, called Key Distribution, which uses a distributed swap test to check that the keys sent to Bob and Charlie match:
+While protection against forgery is simple enough, it is harder to protect against repudiation. This is because in a two-recipient case, Alice can send Bob and Charlie different states. Due to the no-cloning theorem \cite{WZ82}, there is no perfect way for Bob and Charlie to check that their keys are the same. Gottesman and Chuang's solution is to introduce another step to the protocol, called Key Distribution, which uses a distributed SWAP test to check that the keys sent to Bob and Charlie match:
 
 \begin{description}
-\item[Key Distribution]Alice sends two copies of each key to Bob and Charlie. Bob and Charlie pick random indices $i \in \{0,...,M-1\}$ to perform a distributed swap on. Some of these indices they will perform swap tests on their own copies of the key to ensure that those match, and others Charlie will send a copy of their key to Bob so that Bob can perform a swap test to ensure that Bob's keys match Charlie's. If any tests fail then the protocol is aborted, otherwise they discard the test keys and continue the protocol with the remaining keys.
+\item[Key Distribution]Alice sends two copies of each key to Bob and Charlie. Bob and Charlie pick random indices $i \in \{0,...,M-1\}$ to perform a distributed SWAP on. Some of these indices they will perform SWAP tests on their own copies of the key to ensure that those match, and others Charlie will send a copy of their key to Bob so that Bob can perform a SWAP test to ensure that Bob's keys match Charlie's. If any tests fail then the protocol is aborted, otherwise they discard the test keys and continue the protocol with the remaining keys.
 \end{description}
 
-With this step in place, the probability of Alice being able to successfully repudiate is the probability that all distributed swap tests pass yet $|s_B - s_C| > (c_2 - c_1)M$, where $s_B$ and $s_C$ are Bob and Charlie's incorrect counts, respectively. This probability can be exponentially small, depending on how large the gap between $c_1$ and $c_2$ is.
+With this step in place, the probability of Alice being able to successfully repudiate is the probability that all distributed SWAP tests pass yet $|s_B - s_C| > (c_2 - c_1)M$, where $s_B$ and $s_C$ are Bob and Charlie's incorrect counts, respectively. This probability can be exponentially small, depending on how large the gap between $c_1$ and $c_2$ is.
 
 While Lamport's signature scheme assumes the existence of classical one-way functions, no such assumption is required here. This is because quantum one-way functions can be devised, by mapping the $L$-bit strings to $n$-qubit states such that the states are nearly orthogonal, meaning that $|\langle f_k|f_k \rangle| \leq \delta$. It was shown by Buhrman et al.~\cite{PhysRevLett.87.167902} that if $\delta \approx 0.9$ then $L = 2^n$. Thus using fingerprint states as our one-way function makes it possible to create an exponentially small probability of forgery.
 
-However, this protocol has a number of disadvantages as well. The most significant problem is that verification keys cannot be copied from recipient to recipient due to the no cloning theorem, so all copies of the keys must come from Alice herself\footnote{Or a trusted third party.} and sent to each recipient. This leads to two new problems:
+However, this protocol has a number of disadvantages as well:
 
 \begin{enumerate}
-\item Alice needs an authenticated quantum channel to each recipient. This is firstly impossible to achieve for arbitrary quantum states even with computational security \cite{1181969}, and secondly leads to a bootstrapping problem, where we have solved classical authentication at the cost of requiring quantum authentication.
-\item We also need an easy way of generating and store the states required for the public key. One suggested way is a quantum memory, but such a system is not practical for long-term storage.
+\item Verification keys cannot simply be copied due to the no-cloning theorem \cite{WZ82}, so all of the keys must come from Alice. This requires authenticated quantum channels from Alice to each recipient, to ensure a forger doesn't simply send their own keys. But for generic quantum states, this is impossible \cite{1181969}, thus offering us an even harder challenge than the classical authentication we're trying to solve.
+\item The recipients need to store the keys indefinitely until Alice uses them to sign a message. This requires long-time quantum memory, which is currently impractical.
+\item Generating and sharing a quantum one-way function, while possible, is a complex task.
+\item The distributed SWAP tests are not efficient.
 \end{enumerate}
 
-Alongside these, we have the fact that devising and sharing a quantum one-way function is not easy, and the distributed swap tests are challenging. Over the rest of this section, we will summarise how these problems have been overcome in the years following this result.
+Over the rest of this section, we will summarise how these problems have been overcome in the years following this result.
+
+\subsection{Dunjko, Wallden and Andersson}
+
+\subsection{Wallden, Dunjko, Kent and Andersson}
+
+\subsection{Yin, Fu and Chen}
+
+\subsection{Amiri, Wallden, Kent and Andersson}
 
 \section{Experimental Achievements}
 
@@ -173,4 +183,4 @@ Alongside these, we have the fact that devising and sharing a quantum one-way fu
 
 \end{document}
 %
-% ****** End of file apssamp.tex ******
+% ****** End of file qde.tex ******
