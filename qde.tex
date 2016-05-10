@@ -132,7 +132,7 @@ Note that this signature scheme can only be used for verifying a single $m$-bit 
 
 \section{Quantum Digital Signatures}
 
-\subsection{Gottesman and Chuang}
+\subsection{First Quantum Digital Signature}
 
 The first quantum digital signature was devised in 2001 by Daniel Gottesman and Isaac Chuang \citep{quant-ph/0105032}. The protocol used the same principles as Lamport's one-time signature scheme, but utilised quantum one-way functions, which map classical $L$-bit strings $k$ to $n$-qubit quantum states $|f_k\rangle$. The full protocol is described below, where $f$ is the quantum one-way function, $c_1, c_2$ are security thresholds such that $0 \leq c_1 < c_2 < 1$, $M$ is the security parameter, and $T < L/n$ is the number of copies of each key:
 
@@ -165,13 +165,26 @@ However, this protocol has a number of disadvantages as well:
 
 Over the rest of this section, we will summarise how these problems have been overcome in the years following this result.
 
-\subsection{Dunjko, Wallden and Andersson}
+\subsection{Initial Improvements}
 
-\subsection{Wallden, Dunjko, Kent and Andersson}
+Improvements were initially made to digital signatures by Dunjko, Wallden and Andersson \cite{PhysRevLett.112.040502}, who proposed a system which removed the need for quantum memory, the quantum SWAP test and the cost of sending quantum one-way functions by encoding the keys in coherent states. Their protocol for three parties was devised as follows, with the constraint that $0 \leq s_b < s_c < 1$:
 
-\subsection{Yin, Fu and Chen}
+\begin{description}
+\item[Key Generation]Alice generates two $L$-bit keys $k^0, k^1$ at random for some security parameter $L$, which act as Alice's signing keys. Alice then generates states of the form $|(-1)^{k^b_l}\alpha\rangle$ for $l \in \{0,...,L-1\}$ and $b \in \{0, 1\}$, where $\alpha$ is a positive real number known between all parties and $k^b_l$ is the $l$-th bit of $k^b$. These quantum states will act as the verification key.
+\item[Key Distribution]For two recipients, Bob and Charlie, Alice generates a copy of the above state for each participant. Bob and Charlie run their states together through a multiport. For states which come out of the signal port, they then use Unambiguous State Discrimination (USD) \cite{Ivanovic1987257} to distinguish between the states $\{|-\alpha\rangle, |\alpha\rangle\}$, and for each unambiguous state $|(-1)^{k^b_l}\alpha\rangle$ noting the value of $k^b_l$, the index $l$ and whether $b = 0$ or $1$.
+\item[Message Signing]To sign a message $b$, Alice sends the message $(b, k^b)$ to Bob.
+\item[Message Verification]To verify a message-signature pair $(b, k^b)$, Bob (resp.\ Charlie) checks the bits of $k^b$ sent to him with the bits that he was able to unambiguously determine from the distribution stage. If the number of mismatches is at most $s_bp_{USD}L$ (resp.\ $s_cp_{USD}L$), where $s_b$ (resp.\ $s_c$) are acceptance thresholds and $p_{USD}$ is the USD success probability, then Bob (resp.\ Charlie) accepts the pair.
+\end{description}
 
-\subsection{Amiri, Wallden, Kent and Andersson}
+The use of the multiport is to defend against repudiation; even if Alice sends $|\alpha\rangle$ to Bob and $|\beta\rangle$ to Charlie such that $\alpha \neq \beta$, only using photons that come out the signal outputs of the multiport ensures that both recipients finish with the state $|(\alpha + \beta)/2\rangle$. Because they have the same reduced state, on average they will see the same number of mismatches. Alice's best strategy has probability $(s_b + s_c)p_{USD}/2$ of making Bob and Charlie disagree on a single bit of the key, which leads to her probability of successful repudiation being negligible in terms of the difference between Charlie and Bob's thresholds, $p_{USD}$ and $L$.
+
+In order for Bob to successfully forge a message\footnote{Note that this is easier than Charlie forging a message as $s_b < s_c$.}, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output\footnote{Note that if all parties are honest, the state at both null outputs is the vacuum state, so photons should not be seen.}.
+
+\subsection{Same Requirements as QKD}
+
+\subsection{Removing the need for Authenticated Quantum Channels}
+
+\subsection{Arbitrated Quantum Signatures}
 
 \section{Experimental Achievements}
 
