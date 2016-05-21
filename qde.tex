@@ -132,7 +132,7 @@ Note that this signature scheme can only be used for verifying a single $m$-bit 
 
 \section{Quantum Digital Signatures}
 
-\subsection{First Quantum Digital Signature}
+\subsection{Gottesman and Chuang}
 
 The first quantum digital signature was devised in 2001 by Daniel Gottesman and Isaac Chuang \citep{quant-ph/0105032}. The protocol used the same principles as Lamport's one-time signature scheme, but utilised quantum one-way functions, which map classical $L$-bit strings $k$ to $n$-qubit quantum states $|f_k\rangle$. The full protocol is described below, where $f$ is the quantum one-way function, $c_1, c_2$ are security thresholds such that $0 \leq c_1 < c_2 < 1$, $M$ is the security parameter, and $T < L/n$ is the number of copies of each key:
 
@@ -178,9 +178,20 @@ Improvements were initially made to digital signatures by Dunjko, Wallden and An
 
 The use of the multiport is to defend against repudiation; even if Alice sends $|\alpha\rangle$ to Bob and $|\beta\rangle$ to Charlie such that $\alpha \neq \beta$, only using photons that come out the signal outputs of the multiport ensures that both recipients finish with the state $|(\alpha + \beta)/2\rangle$. Because they have the same reduced state, on average they will see the same number of mismatches. Alice's best strategy has probability $(s_b + s_c)p_{USD}/2$ of making Bob and Charlie disagree on a single bit of the key, which leads to her probability of successful repudiation being negligible in terms of the difference between Charlie and Bob's thresholds, $p_{USD}$ and $L$.
 
-In order for Bob to successfully forge a message\footnote{Note that this is easier than Charlie forging a message as $s_b < s_c$.}, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output\footnote{Note that if all parties are honest, the state at both null outputs is the vacuum state, so photons should not be seen.}.
+In order for Bob -- or alternatively Charlie -- to successfully forge a message, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output\footnote{Note that if all parties are honest, the state at both null outputs is the vacuum state, so few if any photons should be seen.}.
 
-\subsection{Same Requirements as QKD}
+\subsection{Quantum Digital Signatures using QKD}
+
+Wallden et al.\ \cite{PhysRevA.91.042304} developed in 2015 an improved signature scheme that no longer required the use of a multiport for Bob and Charlie. This scheme utilises quantum state elimination \cite{PhysRevA.89.022336} to build trust in Alice's signature. The protocol is explained below, using $|0\rangle, |1\rangle, |+\rangle = (|0\rangle + |1\rangle)/\sqrt{2}, |-\rangle = (|0\rangle - |1\rangle)/\sqrt{2}$ are the BB84 \cite{BB84} states, and $0 \leq s_b < s_c < 1$:
+
+\begin{description}
+\item[Key Generation]For a future one-bit message, Alice generates pairs $(k^0_l, k^1_l), 0 \leq l < L$ where $L$ is a security parameter and $k \in \{0, 1, +, -\}$ is chosen at random. She then generates two copies of the states $\bigotimes_{l=0}^{L-1}|k^0_l\rangle$ and $\bigotimes_{l=0}^{L-1}|k^1_l\rangle$ to act as her verification keys.
+\item[Key Distribution]Alice sends copies of the verification keys to Bob and Charlie. Bob (resp.\ Charlie) picks between $L/2-r$ and $L/2+r$ indices $0 \leq l < L$ and bits $b \in \{0, 1\}$ for some $r$ and sends $(l, b, |k^b_l\rangle)$ to Charlie (resp.\ Bob), aborting if he receives a number of tuples outside of that limit. Bob and Charlie then measure all the qubits they have in either the $\{|0\rangle, |1\rangle\}$ or $\{|+\rangle\, |-\rangle\}$ basis. Bob and Charlie use the outcome of these measurements to derive what values they know the key \textit{cannot} be.
+\item[Message Signing]For a message $b$, Alice sends the signed message $(b, k^b_0k^b_1...k^b_{L-1})$.
+\item[Message Verification]To verify the signed message $(b, k^b_0k^b_1...k^b_{L-1})$, Bob (resp.\ Charlie) checks how many of the symbols in the signing key are in the set of values they eliminated from measurement and accepts if this number is smaller than $s_bL$ (resp.\ $s_cL$).
+\end{description}
+
+Because Alice does not know which qubits Bob measured and which he forwarded to Charlie (and vice versa), she gains no repudiation advantage from sending different states to the two receivers. Her best strategy is to send a signed message which has $L(s_c - s_b)L/2$ mismatches with the actual signature, which has a negligible chance of success in terms of $L$. There is also a negligible chance of forgery, as even if Bob faked the qubits he was forwarding on to Charlie, he would still need to guess the qubits that Charlie didn't forward on to him.
 
 \subsection{Removing the need for Authenticated Quantum Channels}
 
