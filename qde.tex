@@ -77,7 +77,18 @@ While classical cryptography has relied on the assumed existence of one-way func
 
 \section{Introduction}
 
+Cryptography is the study of secure communications between multiple parties, often called Alice and Bob. In classical cryptography, this security is guaranteed through the assumed hardness of certain problems. The RSA encryption scheme \cite{Rivest:1978:MOD:359340.359342}, for example, is secure under the assumption that the problem of factoring large integers is computationally hard. Unfortunately, this assumption has no strict guarantees behind it. And even worse, some of these problems, such as factoring, have been shown to be computationally insecure in both theory \cite{Shor97} and experimental work \cite{MLL+12, 1604.05796} using quantum computers.
+
+Thankfully, while quantum computers have the possibility of breaking secrecy, they also have the potential to fix it. Quantum Key Distribution (QKD) protocols such as BB84 \citep{BB84} use the uncertainty principle to securely establish a shared key with no assumptions. Once they have a shared key, they can use a one-time pad to send messages with perfect secrecy. This means that it is impossible for an eavesdropper, often called Eve, to learn any information about what Alice and Bob said to one another.
+
+You might think that this solves all the problems of cryptography. But alas, this is not the case, as secrecy is only one aspect of what we want in cryptography. Even if Alice and Bob have guaranteed secrecy, that still doesn't stop Eve from sending a message of random gibberish to Bob while pretending to be Alice. And unless extra precautions are taken, Bob cannot tell whether the random message is forged by an attacker or what Alice wanted to send in the first place. This has also been demonstrated experimentally \cite{Bennett1992} and even now has industry involvement, with companies such as ID Quantique \footnote{\url{http://www.idquantique.com/}} offering commercial products for QKD.
+
+Those extra precautions are to sign a message using digital signatures. Like how someone signs the end of a letter to indicate that they wrote it, a digital signature is an extra piece of data in a message to indicate who wrote it. And like classical encryption schemes, classical digital signatures rely on the hardness of certain problems such as the Secure Hashing Algorithm (SHA).
+
+Based on the improvements QKD has made in terms of secrecy, one might ask if quantum physics can also benefit digital signatures. This is the subject that this essay will explore. SEC.\ \ref{sec:prelim} will provide mathematical preliminaries before defining a digital signature in SEC.\ \ref{sec:def}. SEC.\ \ref{sec:lamport} describes the classical digital signature that most quantum digital signatures are based on, which are then describe theoretically in SEC.\ \ref{sec:qds} and experimentally in SEC.\ \ref{sec:experiments}. Finally, we conclude with some points of discussion in SEC.\ \ref{sec:conclusion}.
+
 \section{Preliminaries}
+\label{sec:prelim}
 
 \begin{definition}
 A function $f:\mathbb{N}\rightarrow\mathbb{R}$ is negligible iff $\forall~ c > 0 ~\exists~ n_0 \in \mathbb{N}$ such that $\forall~ n \geq n_0, |f(n)| < \frac{1}{n^c}$.
@@ -86,6 +97,7 @@ A function $f:\mathbb{N}\rightarrow\mathbb{R}$ is negligible iff $\forall~ c > 0
 The most common example of negligible functions are functions of the form $2^{-p(n)}$ for some positive polynomial $p$.
 
 \section{Definition of Digital Signatures}
+\label{sec:def}
 
 A digital signature scheme consists of the following stages:
 
@@ -111,6 +123,7 @@ For security, we care about two properties with digital signatures:
 \end{description}
 
 \section{Lamport's One-Time Digital Signature}
+\label{sec:lamport}
 
 The original quantum digital signature was inspired from a classical family of digital signatures. This family of signatures were first published by Lamport\cite{lamp79}, and are reliant on the existence of one-way functions, defined below.
 
@@ -131,6 +144,7 @@ Because this signature scheme is classical and deterministic, it is trivial for 
 Note that this signature scheme can only be used for verifying a single $m$-bit message. This is because if an attacker has signatures for two different messages $M, M'$ then they can construct the valid signature for the new message $m_0m_1...m'_i...m_{m-1}$, where $m_i \neq m'_i$.
 
 \section{Quantum Digital Signatures}
+\label{sec:qds}
 
 \subsection{Gottesman and Chuang}
 
@@ -178,7 +192,7 @@ Improvements were initially made to digital signatures by Dunjko, Wallden and An
 
 The use of the multiport is to defend against repudiation; even if Alice sends $|\alpha\rangle$ to Bob and $|\beta\rangle$ to Charlie such that $\alpha \neq \beta$, only using photons that come out the signal outputs of the multiport ensures that both recipients finish with the state $|(\alpha + \beta)/2\rangle$. Because they have the same reduced state, on average they will see the same number of mismatches. Alice's best strategy has probability $(s_b + s_c)p_{USD}/2$ of making Bob and Charlie disagree on a single bit of the key, which leads to her probability of successful repudiation being negligible in terms of the difference between Charlie and Bob's thresholds, $p_{USD}$ and $L$.
 
-In order for Bob -- or alternatively Charlie -- to successfully forge a message, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output\footnote{Note that if all parties are honest, the state at both null outputs is the vacuum state, so few if any photons should be seen.}.
+In order for Bob -- or alternatively Charlie -- to successfully forge a message, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output \footnote{Note that if all parties are honest, the state at both null outputs is the vacuum state, so few if any photons should be seen.}.
 
 \subsection{Quantum Digital Signatures using QKD}
 \label{ssec:qds-using-qkd}
@@ -230,8 +244,10 @@ Like the protocol in SEC.\ \ref{ssec:qds-using-qkd}, security against repudiatio
 For Bob to forge a message to send to Charlie, he needs to guess the values of the bits that Charlie did not forward on to him, which is negligible for the same reason as in SEC.\ \ref{ssec:qds-using-qkd}. Bob has the highest chance of success if he eavesdrops on the key generation protocol between Alice and Charlie, which he now can given that the channel is not authenticated. If Bob regularly guesses the wrong qubit to forward to Alice, this will result in low correlations between Alice and Charlie's measurements in the $X$ or $Z$ basis. Thus when Alice and Charlie look at the correlations between their $V$ and $X$ parts of their keys, they will either find low correlations in $V$ or a significant difference between the number of correlations in $V$ and the number of correlations in $X$. Either way, the protocol will be aborted. Thus the probability of a successful forgery is negligible.
 
 \section{Experimental Achievements}
+\label{sec:experiments}
 
 \section{Conclusion and Discussion}
+\label{sec:conclusion}
 
 \bibliography{qde}% Produces the bibliography via BibTeX.
 
