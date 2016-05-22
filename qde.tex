@@ -181,6 +181,7 @@ The use of the multiport is to defend against repudiation; even if Alice sends $
 In order for Bob -- or alternatively Charlie -- to successfully forge a message, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output\footnote{Note that if all parties are honest, the state at both null outputs is the vacuum state, so few if any photons should be seen.}.
 
 \subsection{Quantum Digital Signatures using QKD}
+\label{ssec:qds-using-qkd}
 
 Wallden et al.\ \cite{PhysRevA.91.042304} developed in 2015 an improved signature scheme that no longer required the use of a multiport for Bob and Charlie. This scheme utilises quantum state elimination \cite{PhysRevA.89.022336} to build trust in Alice's signature. The protocol is explained below, using $|0\rangle, |1\rangle, |+\rangle = (|0\rangle + |1\rangle)/\sqrt{2}, |-\rangle = (|0\rangle - |1\rangle)/\sqrt{2}$ are the BB84 \cite{BB84} states, and $0 \leq s_b < s_c < 1$:
 
@@ -195,15 +196,48 @@ Because Alice does not know which qubits Bob measured and which he forwarded to 
 
 \subsection{Removing the need for Authenticated Quantum Channels}
 
-\subsection{Arbitrated Quantum Signatures}
+2016 was when we finally saw quantum digital signatures proposed without authenticated quantum channels, in two papers: one by Yin, Fu and Chen \cite{PhysRevA.93.032316} and one published a week later by Amiri et al.\ \cite{PhysRevA.93.032325}. The latter paper will be the focus of this section.
+
+This signature scheme relies on a key generation protocol; a protocol undertaken between Alice and each receiver independently. Based upon BB84 \cite{BB84}, the key generation protocol used between Alice and, for example, Bob is described below:
+
+\begin{enumerate}
+\item Bob generates qubits in either $|0\rangle, |1\rangle, |+\rangle \text{ or } |-\rangle$ states and forwards these states on to Alice.
+\item Alice measures each state in either the $X$ or $Z$ basis, noting her chosen basis and results.
+\item Alice and Bob publicly announce their choice of bases and throw out any results that were measured in different bases. Steps 1-3 are repeated until enough bits are produced.
+\item Bob divides his key up into four parts of equal size:
+\begin{itemize}
+\item The first set of bits, $V$, are all results from $X$ basis measurements, and will be compared with the corresponding bits from Alice's measurements to see how much correlation there is between their bits.
+\item The second set of bits, $Z$, are all results from $Z$ basis measurements, and will be compared with Alice's corresponding bits to determine how much of their communications has been eavesdropped upon.
+\item The third set of bits, $C^B$ are bits that are forwarded on to Charlie.
+\item The fourth set of bits, $B$ are the bits that Bob keeps for his own private key. All other bits are discarded by both him and Alice.
+\end{itemize}
+\item If there is not enough correlation or the difference in the amount of correlation between the $V$ and $Z$ bits is too high, then the protocol is aborted.
+\item Otherwise, Bob and Charlie exchange their parts of the keys through a secure \& authenticated classical channel.
+\end{enumerate}
+
+This protocol allows Alice to generate highly correlated keys with the recipients of her message. We use this to develop a digital signature scheme as follows, with $0 \leq s_b < s_c < 1/2$ and $L$ as our security parameter:
+
+\begin{description}
+\item[Key Generation/Distribution]Bob and Charlie use the key generation protocol to generate two $L$-bit keys with Alice, half of each key being exchanged with the other party. Alice's copies of the keys are denoted $A^B_0, A^B_1, A^C_0 \text{ and } A^C_1$, where $B$ (resp.\ $C$) denotes Bob (resp.\ Charlie). Bob and Charlie have their own keys with Alice $B_0, B_1$ \& $C_0, C_1$ and their keys from each other $B^C_0, B^C_1$ \& $C^B_0, C^B_1$, respectively.
+\item[Message Signing]To sign a bit $b$, Alice sends the message $(b, A^B_b, A^C_b)$.
+\item[Message Verification]To verify a sent message message $(b, A^B_b, A^C_b)$, Bob checks the number of bits in $A^B_b$ that mismatch $B_b$ and the number of bits in $A^C_b$ that mismatch $B^C_b$. If the total number of mismatches is below $s_bL/2$ then the message is rejected. Otherwise the message is accepted.
+\end{description}
+
+This signature is a more general version of a protocol from 2015. While the protocol described above uses a key generation protocol that creates correlated bit strings between parties, protocol P2 in \cite{PhysRevA.91.042304} uses already shared keys which perfectly match.
+
+Like the protocol in SEC.\ \ref{ssec:qds-using-qkd}, security against repudiation is offered as Alice does not know which bits of their respective keys Bob and Charlie passed on to each other.
+
+For Bob to forge a message to send to Charlie, he needs to guess the values of the bits that Charlie did not forward on to him, which is negligible for the same reason as in SEC.\ \ref{ssec:qds-using-qkd}. Bob has the highest chance of success if he eavesdrops on the key generation protocol between Alice and Charlie, which he now can given that the channel is not authenticated. If Bob regularly guesses the wrong qubit to forward to Alice, this will result in low correlations between Alice and Charlie's measurements in the $X$ or $Z$ basis. Thus when Alice and Charlie look at the correlations between their $V$ and $X$ parts of their keys, they will either find low correlations in $V$ or a significant difference between the number of correlations in $V$ and the number of correlations in $X$. Either way, the protocol will be aborted. Thus the probability of a successful forgery is negligible.
 
 \section{Experimental Achievements}
 
-\section{Current Limitations}
-
-\section{Conclusion}
+\section{Conclusion and Discussion}
 
 \bibliography{qde}% Produces the bibliography via BibTeX.
+
+\appendix
+
+\section{Arbitrated Quantum Signatures}
 
 \end{document}
 %
