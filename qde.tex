@@ -63,10 +63,6 @@
 \date{\today}% It is always \today, today,
              %  but any date may be explicitly specified
 
-\begin{abstract}
-While classical cryptography has relied on the assumed existence of one-way functions for proofs of security, quantum cryptography has given us information theoretically secure secret sharing. This has been achieved via quantum key distribution, utilising the uncertainty principle to limit what an eavesdropper can discover about a shared private key. Another application where we can have provably secure primitives is that of quantum digital signatures, which are used for authenticating that a message did come from a specific user. In this essay, we summarise the theoretical and experimental achievements in quantum digital signatures, and discuss their current limitations.
-\end{abstract}
-
 %\pacs{Valid PACS appear here}% PACS, the Physics and Astronomy
                              % Classification Scheme.
 %\keywords{Suggested keywords}%Use showkeys class option if keyword
@@ -79,11 +75,11 @@ While classical cryptography has relied on the assumed existence of one-way func
 
 Cryptography is the study of secure communications between multiple parties, often called Alice and Bob. In classical cryptography, this security is guaranteed through the assumed hardness of certain problems. The RSA encryption scheme \cite{Rivest:1978:MOD:359340.359342}, for example, is secure under the assumption that the problem of factoring large integers is computationally hard. Unfortunately, this assumption has no strict guarantees behind it. And even worse, some of these problems, such as factoring, have been shown to be computationally insecure in both theory \cite{Shor97} and experimental work \cite{MLL+12, 1604.05796} using quantum computers.
 
-Thankfully, while quantum computers have the possibility of breaking secrecy, they also have the potential to fix it. Quantum Key Distribution (QKD) protocols such as BB84 \citep{BB84} use the uncertainty principle to securely establish a shared key with no assumptions. Once they have a shared key, they can use a one-time pad to send messages with perfect secrecy. This means that it is impossible for an eavesdropper, often called Eve, to learn any information about what Alice and Bob said to one another.
+Thankfully, while quantum computers have the possibility of breaking secrecy, they also have the potential to fix it. Quantum Key Distribution (QKD) protocols such as BB84 \citep{BB84} use the uncertainty principle to securely establish a shared key with no assumptions. Once they have a shared key, they can use a one-time pad to send messages with perfect secrecy. This means that it is impossible for an eavesdropper, often called Eve, to learn any information about what Alice and Bob said to one another. This has also been demonstrated experimentally \cite{Bennett1992} and even now has industry involvement, with companies such as ID Quantique \footnote{\url{http://www.idquantique.com/}} offering commercial products for QKD.
 
-You might think that this solves all the problems of cryptography. But alas, this is not the case, as secrecy is only one aspect of what we want in cryptography. Even if Alice and Bob have guaranteed secrecy, that still doesn't stop Eve from sending a message of random gibberish to Bob while pretending to be Alice. And unless extra precautions are taken, Bob cannot tell whether the random message is forged by an attacker or what Alice wanted to send in the first place. This has also been demonstrated experimentally \cite{Bennett1992} and even now has industry involvement, with companies such as ID Quantique \footnote{\url{http://www.idquantique.com/}} offering commercial products for QKD.
+You might think that this solves all the problems of cryptography. But alas, this is not the case, as secrecy is only one aspect of what we want in cryptography. Even if Alice and Bob have guaranteed secrecy, that still doesn't stop Eve from sending a message of random gibberish to Bob while pretending to be Alice. And unless extra precautions are taken, Bob cannot tell whether the random message is forged by an attacker or what Alice wanted to send in the first place. Indeed, this is one of the arguments recently laid out in a white paper by CESG which states that ``CESG does not endorse QKD for government or military applications, and advises against replacing any existing public key solutions with QKD for commercial applications'' \footnote{\url{https://www.cesg.gov.uk/white-papers/quantum-key-distribution}}.
 
-Those extra precautions are to sign a message using digital signatures. Like how someone signs the end of a letter to indicate that they wrote it, a digital signature is an extra piece of data in a message to indicate who wrote it. And like classical encryption schemes, classical digital signatures rely on the hardness of certain problems such as the Secure Hashing Algorithm (SHA).
+Those extra precautions are to sign a message using digital signatures. To quote the same CESG white paper, ``Ubiquitous on-demand modern services [...] rely more on authentication and integrity mechanisms, such as digital signatures, than on encryption.'' Much like how one signs the end of a letter to indicate that they wrote it, a digital signature is an extra piece of data in a message to indicate who wrote it. And like classical encryption schemes, classical digital signatures rely on the hardness of certain problems such as the Secure Hashing Algorithm (SHA).
 
 Based on the improvements QKD has made in terms of secrecy, one might ask if quantum physics can also benefit digital signatures. This is the subject that this essay will explore. SEC.\ \ref{sec:prelim} will provide mathematical preliminaries before defining a digital signature in SEC.\ \ref{sec:def}. SEC.\ \ref{sec:lamport} describes the classical digital signature that most quantum digital signatures are based on, which are then describe theoretically in SEC.\ \ref{sec:qds} and experimentally in SEC.\ \ref{sec:experiments}. Finally, we conclude with some points of discussion in SEC.\ \ref{sec:conclusion}.
 
@@ -180,6 +176,7 @@ However, this protocol has a number of disadvantages as well:
 Over the rest of this section, we will summarise how these problems have been overcome in the years following this result.
 
 \subsection{Initial Improvements}
+\label{ssec:no-qmem}
 
 Improvements were initially made to digital signatures by Dunjko, Wallden and Andersson \cite{PhysRevLett.112.040502}, who proposed a system which removed the need for quantum memory, the quantum SWAP test and the cost of sending quantum one-way functions by encoding the keys in coherent states. Their protocol for three parties was devised as follows, with the constraint that $0 \leq s_b < s_c < 1$:
 
@@ -209,6 +206,7 @@ Wallden et al.\ \cite{PhysRevA.91.042304} developed in 2015 an improved signatur
 Because Alice does not know which qubits Bob measured and which he forwarded to Charlie (and vice versa), she gains no repudiation advantage from sending different states to the two receivers. Her best strategy is to send a signed message which has $L(s_c - s_b)L/2$ mismatches with the actual signature, which has a negligible chance of success in terms of $L$. There is also a negligible chance of forgery, as even if Bob faked the qubits he was forwarding on to Charlie, he would still need to guess the qubits that Charlie didn't forward on to him.
 
 \subsection{Removing the need for Authenticated Quantum Channels}
+\label{ssec:insecure-qc}
 
 2016 was when we finally saw quantum digital signatures proposed without authenticated quantum channels, in two papers: one by Yin, Fu and Chen \cite{PhysRevA.93.032316} and one published a week later by Amiri et al.\ \cite{PhysRevA.93.032325}. The latter paper will be the focus of this section.
 
@@ -246,14 +244,28 @@ For Bob to forge a message to send to Charlie, he needs to guess the values of t
 \section{Experimental Achievements}
 \label{sec:experiments}
 
+While many of these results have proven theoretically interesting, there have been a number of practical difficulties. However, experimental results have been developed using compromises. A selection of these results are discussed in this section.
+
+One of the earliest experimental results was in 2012 by Clarke et al.\ \cite{CCD+12}. This experiment encoded qubits in the phase of coherent light, created using an attenuated pulsed laser at an $850 \text{ nm}$ wavelength. The states created were of the form $\{|\alpha e^{2i\pi p/N}\rangle| p = 0,1,...,N\}$ by use of a Mach-Zender interferometer with a controllable phase modulator.
+
+Rather than implement a distributed SWAP test as originally proposed by Gottesman and Chuang, Alice's pulsed laser is sent through a beamsplitter, the outputs of which are sent through a multiport to Bob and Charlie. A phase modulator was placed between Alice's beamsplitter output and Bob's input port of the multiport in order to test Alice's ability to successfully repudiate a message. To avoid the use of quantum memory, Bob and Charlie measured their photons immediately and noted their result and measurement basis by use of a Mach-Zender interferometer and a phase modulator. When Alice sends her message and signature including a classical description of the state, Bob and Charlie can then check if it is consistent with their measurement results.
+
+When results were taken, Clarke et al.\ noted that the gap between their probability of a successful signature -- assuming honest players -- and the probability of a successful forgery by Bob is $g = 8.03 \times 10^{-4} \pm 0.3 \times 10^{-4}$. The primary reasons for a gap this small were the low count rates at the detectors, which had losses of $7.5 \text{ dB}$ at the multiport null-ports and $7.1 \text{ dB}$ at Bob and Charlie's measurements. The overall detection efficiency of the experiment ranged between $36\%$ and $42\%$.
+
+A later paper, implementing the signature from SEC.\ \ref{ssec:no-qmem}, was written by Collins et al.\ in 2014 \cite{PhysRevLett.113.040502}. This experiment largely used the same setup as in \cite{CCD+12}, but Bob and Charlie's measurements were now broken up into two Mach-Zender interferometers separated by a beamsplitter: one to measure $\{|\alpha\rangle, |\alpha e^{i\pi}\rangle\}$ and one to measure $\{|\alpha e^{i\pi/2}\rangle, |\alpha e^{3i\pi/2}\}$. These were the four qubit encodings used by Alice in this implementation of the scheme. Another difference is that Collins et al.\ used unambiguous state elimination to detect invalid signatures.
+
+Sadly, the gap proved to be even smaller in this experiment, at a maximum of $1.2 \time 10^{-6}$. For this protocol to fail with probability at most $0.01\%$ for a one-bit message, this would require a signature key of $5.1 \times 10^{13}$ qubits. This is far too large to be practical. To improve this number, suggestions made by the authors include finding optimal photon numbers for state elimination, switching to protocols that do not require a multiport, and improving clock speeds. The last of these tasks was not possible due to limitations in the time-tagging.
+
+The final paper discussed in this essay was from 2016 by Donaldson et al.\ \cite{PhysRevA.93.012329}, where they demonstrated digital signatures across distances ranging from $500-2000\text{m}$ of fibre. The distance limitations with the previous experiments were caused by the multiport, which restricted the transmission distance to 5m. In this paper, the multiport is removed and repudiation is resolved by Bob \& Charlie taking measurements on their states and then picking results at random to send to each other.
+
+Experimental results showed that when the sender and receiver were separated by 500m of fibre, the gap was at most $2.86 \times 10^{-4}$. For a failure probability of at most 0.01\%, this requires a signature of $1.93 \times 10^{9}$ qubits. At the 100MHz pulse rate this experiment was operating at, one signature would take approximately 20s. This signature length increased as the distance increased, but at 2000m was still four orders of magnitude smaller than what was required in \cite{PhysRevLett.113.040502}, though still not practical in comparison to QKD or classical digital signatures. Suggested improvements include changing to 1550 nm wavelength lasers, which would have lower losses in fibres -- $0.2\text{ dB km}^{-1}$ instead of $2.2\text{ dB km}^{-1}$ -- as well as the use of better detectors, such as semiconductor \cite{0957-0233-21-1-012002} or even superconducting \cite{0953-2048-25-6-063001} technologies.
+
 \section{Conclusion and Discussion}
 \label{sec:conclusion}
 
 \bibliography{qde}% Produces the bibliography via BibTeX.
 
 \appendix
-
-\section{Arbitrated Quantum Signatures}
 
 \end{document}
 %
