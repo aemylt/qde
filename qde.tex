@@ -74,18 +74,18 @@
 \section{Introduction}
 \label{sec:intro}
 
-Cryptography is the study of secure communications between multiple parties, often called Alice and Bob. In classical cryptography, this security is guaranteed through the assumed hardness of certain problems. The RSA encryption scheme \cite{Rivest:1978:MOD:359340.359342}, for example, is secure under the assumption that the problem of factoring large integers is computationally hard. Unfortunately, this assumption has no strict guarantees behind it. And even worse, some of these problems, such as factoring, have been shown to be computationally insecure in both theory \cite{Shor97} and experimental work \cite{MLL+12, 1604.05796} using quantum computers.
+Cryptography is the study of secure communications between multiple parties, often called Alice and Bob. In classical cryptography, this security is guaranteed through the assumed hardness of certain problems. RSA \cite{Rivest:1978:MOD:359340.359342}, for example, is secure assuming that factoring integers is hard. Unfortunately, these have no strict guarantees. And even worse, some have been shown to be easy in both theory \cite{Shor97} and experimental work \cite{MLL+12, 1604.05796} using quantum computers.
 
-Thankfully, while quantum computers have the possibility of breaking secrecy, they also have the potential to fix it. Quantum Key Distribution (QKD) protocols such as BB84 \citep{BB84} use the uncertainty principle to securely establish a shared key with no assumptions. Once they have a shared key, they can use a one-time pad to send messages with perfect secrecy. This means that it is impossible for an eavesdropper, often called Eve, to learn any information about what Alice and Bob said to one another. This has also been demonstrated experimentally \cite{Bennett1992} and even now has industry involvement, with companies such as ID Quantique \footnote{\url{http://www.idquantique.com/}} offering commercial products for QKD.
+Thankfully, while quantum computers break secrecy, they can also fix it. Quantum Key Distribution (QKD) protocols such as BB84 \citep{BB84} can information theoretically securely establish a shared key. Once Alice and Bob have a shared key, they can use a one-time pad to send messages with perfect secrecy. This means that it is impossible for an eavesdropper, Eve, to learn anything about what was said. This has also been demonstrated experimentally \cite{Bennett1992} and there are now companies such as ID Quantique \footnote{\url{http://www.idquantique.com/}} offering commercial products for QKD.
 
-You might think that this solves all the problems of cryptography. But alas, this is not the case, as secrecy is only one aspect of what we want in cryptography. Even if Alice and Bob have guaranteed secrecy, that still doesn't stop Eve from sending a message of random gibberish to Bob while pretending to be Alice. And unless extra precautions are taken, Bob cannot tell whether the random message is forged by an attacker or what Alice wanted to send in the first place. Even worse, Eve might simply pretend to be Bob throughout the whole QKD protocol, and thus fool Alice into sending her the message intended for Bob. This is one of the arguments laid out in a white paper from February 2016 by GCHQ's Communications-Electronics Security Group, which concludes that ``CESG does not endorse QKD for government or military applications, and advises against replacing any existing public key solutions with QKD for commercial applications'' \cite{CESG16}.
+But alas, secrecy is only one aspect of cryptography. Even if Alice and Bob have guaranteed secrecy, that still doesn't stop Eve from sending a message of random gibberish to Bob while pretending to be Alice. Even worse, Eve might simply pretend to be Bob throughout the whole QKD protocol, and thus fool Alice into sending her the message intended for Bob. This is one of the arguments laid out in a white paper by CESG, which concludes that ``CESG does not endorse QKD for government or military applications, and advises against replacing any existing public key solutions with QKD for commercial applications'' \cite{CESG16}.
 
-The extra precautions required to prevent the above attacks are to sign a message using digital signatures. Much like how one signs the end of a letter to indicate that they wrote it, a digital signature is an extra piece of data in a message to indicate who wrote it. And like classical encryption schemes, classical digital signatures rely on the hardness of certain problems such as the Secure Hashing Algorithm (SHA).
+The extra precautions required to prevent the above attacks are digital signatures. Like how someone signs a letter, a digital signature is an extra piece of data in a message to indicate who wrote it. And like classical encryption schemes, classical digital signatures rely on the hardness of certain problems.
 
-Based on the improvements QKD has made in terms of secrecy, one might ask if quantum physics can also benefit digital signatures. This is the subject that this essay will explore. SEC.\ \ref{sec:prelim} will provide mathematical preliminaries before defining a digital signature in SEC.\ \ref{sec:def}. SEC.\ \ref{sec:lamport} describes the classical digital signature that most quantum digital signatures are based on, which are then describe theoretically in SEC.\ \ref{sec:qds} and experimentally in SEC.\ \ref{sec:experiments}. Finally, we conclude with some points of discussion in SEC.\ \ref{sec:conclusion}.
+Based on the improvements in secrecy, one might ask if quantum physics can also benefit digital signatures. This is the subject that this essay will explore. In SEC.\ \ref{sec:def}, we offer a definition of digital signatures. SEC.\ \ref{sec:lamport} describes the best known classical digital signature, followed by quantum digital signatures (QDSs) in SEC.\ \ref{sec:qds} and experimentally in SEC.\ \ref{sec:experiments}. Finally, we conclude with some points of discussion in SEC.\ \ref{sec:conclusion}.
 
-\section{Preliminaries}
-\label{sec:prelim}
+\section{Definition of Digital Signatures}
+\label{sec:def}
 
 \begin{definition}
 A function $f:\mathbb{N}\rightarrow\mathbb{R}$ is negligible iff $\forall~ c > 0 ~\exists~ n_0 \in \mathbb{N}$ such that $\forall~ n \geq n_0, |f(n)| < \frac{1}{n^c}$.
@@ -93,182 +93,174 @@ A function $f:\mathbb{N}\rightarrow\mathbb{R}$ is negligible iff $\forall~ c > 0
 
 The most common example of negligible functions are functions of the form $2^{-p(n)}$ for some positive polynomial $p$.
 
-\section{Definition of Digital Signatures}
-\label{sec:def}
-
 A digital signature scheme consists of the following stages:
 
 \begin{description}
-\item[Key Generation]Alice generates a signing key $sk$ and a verification key $vk$. The signing key is kept to herself, while the verification key is shared with other parties.
-\item[Message Signing]Alice takes a message $m$ and her signing key $sk$ and produces a signature for that message $s_m$.
-\item[Message Verification]Another party, Bob, takes a message $m$, Alice's verification key $vk$ and a signature $s_m$ and accepts if they think the message was sent and signed by Alice, otherwise they reject.
+\item[Key Generation]Alice generates a signing key and a verification key. The signing key is kept to herself, while the verification key is public.
+\item[Message Signing]Alice takes a message and her signing key and produces a message-signature pair.
+\item[Message Verification]Bob, takes a message-signature pair \& Alice's verification key and accepts if he thinks the message was signed by Alice.
 \end{description}
 
-Another definition of verification used in, for example, \cite{quant-ph/0105032} has three different options for Bob. In this definition Bob can output:
+For security, we care about three properties with digital signatures:
 
 \begin{description}
-\item[1-ACC]He thinks the message-signature pair is valid and other parties will also find the message to be valid.
-\item[0-ACC]He thinks the message-signature pair is valid and other parties will not find the message to be valid.
-\item[REJ]He thinks the message-signature pair is invalid.
-\end{description}
-
-For security, we care about two properties with digital signatures:
-
-\begin{description}
-\item[Repudiation]The probability that Alice is able to convince Bob that a message-signature pair is valid and convince another party Charlie that the same pair is invalid is negligible in terms of the security parameter (often the length of the signature).
-\item[Forgery]The probability that Bob can in polynomial time create a valid message-signature pair he has not previously seen sent by Alice is negligible in terms of the security parameter.
+\item[Honest Abort]The probability of aborting if all parties are honest is negligible in terms of the security parameter (often the length of the signature).
+\item[Repudiation]The probability that Alice is able to convince Bob that a message-signature pair is valid and convince another party Charlie that the same pair is invalid is negligible.
+\item[Forgery]The probability that Bob can convince someone else that a message he wrote was written by Alice is negligible.
 \end{description}
 
 \section{Lamport's One-Time Digital Signature}
 \label{sec:lamport}
 
-The original quantum digital signature was inspired from a classical family of digital signatures. This family of signatures were first published by Lamport\cite{lamp79}, and are reliant on the existence of one-way functions, defined below.
+The original quantum digital signature was inspired from a classical family of digital signatures first published by Lamport\cite{lamp79}, and are reliant on the existence of one-way functions, defined below.
 
 \begin{definition}
-Let $\mathcal{X}, \mathcal{Y}$ be arbitrary sets. A function $f:\mathcal{X} \rightarrow \mathcal{Y}$ is one-way iff $f$ can be computed in polynomial time, but for any polynomial-time randomised adversary $f^{-1}:\mathcal{Y} \rightarrow \mathcal{X}$ and uniformly selected $x \in \mathcal{X}, \mathrm{Pr}[f(f^{-1}(x)) = f(x)]$ is negligible in terms of the security parameter (often the length of $x$ in bits).
+Let $\mathcal{X}, \mathcal{Y}$ be arbitrary sets. A function $f:\mathcal{X} \rightarrow \mathcal{Y}$ is one-way iff $f$ can be computed in polynomial time, but for any polynomial-time randomised adversary $f^{-1}:\mathcal{Y} \rightarrow \mathcal{X}$ and uniformly selected $x \in \mathcal{X}, \mathrm{Pr}[f(f^{-1}(x)) = f(x)]$ is negligible.
 \end{definition}
 
-For a one-way function $f$, then Lamport's one-time digital signature scheme is defined as follows for Alice signing an $m$-bit message:
+For a one-way function $f$, Lamport's one-time digital signature scheme is defined as follows for an $m$-bit message:
 
 \begin{description}
-\item[Key Generation]Alice generates $m$ pairs of uniformly selected random integers $\{k^i_0, k^i_1\}$. These will act as Alice's signing key, while the verification key will be the pairs $\{f(k^i_0), f(k^i_1)\}$ for $i \in \{0,...,m-1\}$.
+\item[Key Generation]Alice generates $m$ pairs of uniformly selected integers $(k^i_0, k^i_1)$. These will act as Alice's signing key, while the verification key will be the pairs $(f(k^i_0), f(k^i_1))$ for $i \in \{0,...,m-1\}$.
 \item[Message Signing]For each bit $m_i$ of Alice's message, she sends $k^i_{m_i}$ as her signature for that bit.
-\item[Message Verification]Given Alice's verification key $\{v^i_0, v^i_1\}$ and her signature $k^i_{m_i}$, her message $m_i$ can be verified by accepting if $v^i_{m_i} = f(k^i_{m_i})$ and rejecting otherwise.
+\item[Message Verification]Given Alice's verification key $\{v^i_0, v^i_1\}$ and her signature $k^i_{m_i}$, her message $m_i$ can be verified by accepting if $v^i_{m_i} = f(k^i_{m_i})$.
 \end{description}
 
-Because this signature scheme is classical and deterministic, it is trivial for any verifying parties to share their copies of the message and verification keys and thus impossible for Alice to repudiate the message. As for forgery, if it is possible for an adversary to forge a message given only one message from Alice then it is possible to invert $f$, thus $f$ is not a one-way function.
+Because this signature scheme is classical and deterministic, verifying parties can share their copies of the message and verification keys, so Alice cannot repudiate.
 
-Note that this signature scheme can only be used for verifying a single $m$-bit message. This is because if an attacker has signatures for two different messages $M, M'$ then they can construct the valid signature for the new message $m_0m_1...m'_i...m_{m-1}$, where $m_i \neq m'_i$.
+Note that if an attacker has signatures for two different messages $M, M'$ then they can construct the valid signature for the new message $m_0m_1...m'_i...m_{m-1}$, where $m_i \neq m'_i$. So this scheme only works for signing one message. But if an adversary can forge a message given only one message from Alice then it is possible to invert $f$, so $f$ is not one-way.
 
 \section{Quantum Digital Signatures}
 \label{sec:qds}
 
+Note that for all of these protocols, $L$ is the security parameter, $s_a \geq 0$ is the authentication threshold for authenticating a message from the original author, and $1 > s_v > s_a$ is the threshold for verifying a forwarded message.
+
 \subsection{Gottesman and Chuang}
 
-The first quantum digital signature was devised in 2001 by Daniel Gottesman and Isaac Chuang \citep{quant-ph/0105032}. The protocol used the same principles as Lamport's one-time signature scheme, but utilised quantum one-way functions, which map classical $L$-bit strings $k$ to $n$-qubit quantum states $|f_k\rangle$. The full protocol is described below, where $f$ is the quantum one-way function, $c_1, c_2$ are security thresholds such that $0 \leq c_1 < c_2 < 1$, $M$ is the security parameter, and $T < L/n$ is the number of copies of each key:
+The first QDS was by Gottesman and Chuang \citep{quant-ph/0105032}. The protocol used the same principles as Lamport's one-time signature scheme, but utilised quantum one-way functions, which map $L$-bit strings $k$ to $n$-qubit states $|f_k\rangle$. The full protocol is described below, where $f$ is the quantum one-way function and $T < L/n$ is the number of copies of each key:
 
 \begin{description}
 \item[Key Generation]To sign a single bit, Alice generates pairs of $L$-bit strings $\{k^i_0, k^i_1\}, i \in \{0,...,M-1\}$ uniformly at random to act as her private key. Her public key is the pairs of quantum states $\{|f_{k^i_0}\rangle, |f_{k^i_1}\rangle\}, i \in \{0,...,M-1\}$.
 \item[Message Signing]To sign a bit $b$, Alice sends the tuple $(b, k^0_b, k^1_b,...,k^{M-1}_b)$.
-\item[Message Verification]To verify a signed message $(b, k^0_b, k^1_b,...,k^{M-1}_b)$, a recipient can use $f$ and SWAP tests \cite{PhysRevLett.87.167902} to determine if $|f_{k^i_b}\rangle$ matches the corresponding public key. The number of times a recipient finds that the SWAP test fails is noted as $s$. If $s \leq c_1M$ then the recipient accepts the message (\textbf{1-ACC}), and if $s \geq c_2M$ then the recipient rejects the message (\textbf{REJ}). In the case where $c_1 < s \leq c_2$, the recipient notes that the message is valid but might not be transferable (\textbf{0-ACC}).
+\item[Message Verification]To verify a signed message $(b, k^0_b, k^1_b,...,k^{M-1}_b)$, a recipient can use $f$ and SWAP tests \cite{PhysRevLett.87.167902} to determine if $|f_{k^i_b}\rangle$ matches the corresponding public key. The number of times a recipient finds that the SWAP test fails is noted as $s$. If $s \leq s_aM$ then the recipient accepts the message (\textbf{1-ACC}), and if $s \geq s_vM$ then the recipient rejects the message (\textbf{REJ}). In the case where $s_a < s \leq s_v$, the recipient notes that the message is valid but might not be transferable (\textbf{0-ACC}).
 \end{description}
 
-Security against forgery is possible due to Holevo's theorem \cite{Hol73}, which states that even if an eavesdropper managed to acquire all $T$ copies of the public key, they could only extract at most $Tn$ bits of data, and thus their probability of correctly guessing a single $L$-bit string of the signing key is $2^{-(L-Tn)}$. If the distance between two public keys $|\langle f_k|f_{k'}\rangle| \leq \delta$ for $k \neq k'$, then the probability of an attacker managing to make a recipient accept a signature they weren't able to correctly guess is at most $\delta^2$. Thus by choosing $c_2$ smaller than the probability of a guessing adversary being accepted $(1 - \delta^2)(1 - 2^{1 - (L-Tn)})$, we can ensure that each recipient rejects a message with high probability.
+Security against forgery is possible due to Holevo's theorem \cite{Hol73}, which states that even if an eavesdropper managed to acquire all $T$ copies of the public key, they could only extract at most $Tn$ bits of data, and thus their probability of correctly guessing a single $L$-bit string of the signing key is $2^{-(L-Tn)}$. If the distance between two public keys $|\langle f_k|f_{k'}\rangle| \leq \delta$ for $k \neq k'$, then the probability of an attacker managing to make a recipient accept a signature they weren't able to correctly guess is at most $\delta^2$. Thus by choosing $s_v$ smaller than the probability of a guessing adversary being accepted $(1 - \delta^2)(1 - 2^{1 - (L-Tn)})$, we can ensure that each recipient rejects the forgery with high probability.
 
-While protection against forgery is simple enough, it is harder to protect against repudiation. This is because in a two-recipient case, Alice can send Bob and Charlie different states. Due to the no-cloning theorem \cite{WZ82}, there is no perfect way for Bob and Charlie to check that their keys are the same. Gottesman and Chuang's solution is to introduce another step to the protocol, called Key Distribution, which uses a distributed SWAP test to check that the keys sent to Bob and Charlie match:
+It is harder to protect against repudiation, because Alice can send Bob and Charlie different states. Due to the no-cloning theorem \cite{WZ82}, there is no perfect way for Bob and Charlie to check that their keys are identical. Gottesman and Chuang's solution is to introduce another step to the protocol, called Key Distribution, which uses a distributed SWAP test to check that the keys sent to Bob and Charlie match:
 
 \begin{description}
-\item[Key Distribution]Alice sends two copies of each key to Bob and Charlie. Bob and Charlie pick random indices $i \in \{0,...,M-1\}$ to perform a distributed SWAP on. Some of these indices they will perform SWAP tests on their own copies of the key to ensure that those match, and others Charlie will send a copy of their key to Bob so that Bob can perform a SWAP test to ensure that Bob's keys match Charlie's. If any tests fail then the protocol is aborted, otherwise they discard the test keys and continue the protocol with the remaining keys.
+\item[Key Distribution]Alice sends two copies of each key to Bob and Charlie. Bob and Charlie pick random indices $i \in \{0,...,M-1\}$ to perform a distributed SWAP on. Some of these indices they will perform SWAP tests on their own copies of the key to ensure that those match, and others Charlie will send one of his copies to Bob for a SWAP test between recipients. If any tests fail then the protocol is aborted, otherwise they discard the test keys and continue the protocol with the remaining keys.
 \end{description}
 
-With this step in place, the probability of Alice being able to successfully repudiate is the probability that all distributed SWAP tests pass yet $|s_B - s_C| > (c_2 - c_1)M$, where $s_B$ and $s_C$ are Bob and Charlie's incorrect counts, respectively. This probability can be exponentially small, depending on how large the gap between $c_1$ and $c_2$ is.
+With this step in place, the probability of Alice being able to successfully repudiate is the probability that all distributed SWAP tests pass yet $|s_B - s_C| > (s_v - s_a)M$, where $s_B$ and $s_C$ are Bob and Charlie's incorrect counts, respectively. This probability can be exponentially small, depending on how large the gap between $c_1$ and $c_2$ is.
 
-While Lamport's signature scheme assumes the existence of classical one-way functions, no such assumption is required here. This is because quantum one-way functions can be devised, by mapping the $L$-bit strings to $n$-qubit states such that the states are nearly orthogonal, meaning that $|\langle f_k|f_k \rangle| \leq \delta$. It was shown by Buhrman et al.~\cite{PhysRevLett.87.167902} that if $\delta \approx 0.9$ then $L = 2^n$. Thus using fingerprint states as our one-way function makes it possible to create an exponentially small probability of forgery.
+While Lamport's signature scheme assumes the existence of classical one-way functions, no such assumption is required here. This is because quantum one-way functions can be devised, such as the one by Buhrman et al.~\cite{PhysRevLett.87.167902}. Thus using fingerprint states creates a negligible probability of forgery.
 
-However, this protocol has a number of disadvantages as well:
+However, this protocol has a number of disadvantages:
 
 \begin{enumerate}
-\item Verification keys cannot simply be copied due to the no-cloning theorem \cite{WZ82}, so all of the keys must come from Alice. This requires authenticated quantum channels from Alice to each recipient, to ensure a forger doesn't simply send their own keys. But for generic quantum states, this is impossible \cite{1181969}, thus offering us an even harder challenge than the classical authentication we're trying to solve.
-\item The recipients need to store the keys indefinitely until Alice uses them to sign a message. This requires long-time quantum memory, which is currently impractical.
+\item Verification keys cannot be copied due to the no-cloning theorem \cite{WZ82}, so all keys must come from Alice. This requires authenticated quantum channels from Alice to each recipient, to ensure a forger doesn't simply send their own keys.
+\item The recipients need to store keys until Alice uses them to sign a message in long-time quantum memory.
 \item Generating and sharing a quantum one-way function, while possible, is a complex task.
 \item The distributed SWAP tests are not efficient.
 \end{enumerate}
 
-Over the rest of this section, we will summarise how these problems have been overcome in the years following this result.
+Over the rest of this section, we will summarise how these problems have been overcome.
 
 \subsection{Initial Improvements}
 \label{ssec:no-qmem}
 
-Improvements were initially made to digital signatures by Dunjko, Wallden and Andersson \cite{PhysRevLett.112.040502}, who proposed a system which removed the need for quantum memory, the quantum SWAP test and the cost of sending quantum one-way functions by encoding the keys in coherent states. Their protocol for three parties was devised as follows, with the constraint that $0 \leq s_b < s_c < 1$:
+Improvements were initially made by Dunjko, Wallden and Andersson \cite{PhysRevLett.112.040502}, who removed the need for quantum memory, the quantum SWAP test and quantum one-way functions. Their protocol for three parties is as follows:
 
 \begin{description}
 \item[Key Generation]Alice generates two $L$-bit keys $k^0, k^1$ at random for some security parameter $L$, which act as Alice's signing keys. Alice then generates states of the form $|(-1)^{k^b_l}\alpha\rangle$ for $l \in \{0,...,L-1\}$ and $b \in \{0, 1\}$, where $\alpha$ is a positive real number known between all parties and $k^b_l$ is the $l$-th bit of $k^b$. These quantum states will act as the verification key.
-\item[Key Distribution]For two recipients, Bob and Charlie, Alice generates a copy of the above state for each participant. Bob and Charlie run their states together through a multiport. For states which come out of the signal port, they then use Unambiguous State Discrimination (USD) \cite{Ivanovic1987257} to distinguish between the states $\{|-\alpha\rangle, |\alpha\rangle\}$, and for each unambiguous state $|(-1)^{k^b_l}\alpha\rangle$ noting the value of $k^b_l$, the index $l$ and whether $b = 0$ or $1$.
+\item[Key Distribution]For two recipients, Bob and Charlie, Alice generates a copy of the above state for each participant. Bob and Charlie run their states together through a multiport. For states which come out of the signal port, they then use Unambiguous State Discrimination (USD) \cite{Ivanovic1987257} to distinguish the states $\{|-\alpha\rangle, |\alpha\rangle\}$, and for each unambiguous state $|(-1)^{k^b_l}\alpha\rangle$ note the value of $k^b_l$, the index $l$ and whether $b = 0$ or $1$.
 \item[Message Signing]To sign a message $b$, Alice sends the message $(b, k^b)$ to Bob.
-\item[Message Verification]To verify a message-signature pair $(b, k^b)$, Bob (resp.\ Charlie) checks the bits of $k^b$ sent to him with the bits that he was able to unambiguously determine from the distribution stage. If the number of mismatches is at most $s_bp_{USD}L$ (resp.\ $s_cp_{USD}L$), where $s_b$ (resp.\ $s_c$) are acceptance thresholds and $p_{USD}$ is the USD success probability, then Bob (resp.\ Charlie) accepts the pair.
+\item[Message Verification]To verify a message-signature pair $(b, k^b)$, Bob checks the bits of $k^b$ sent to him with the bits he was able to unambiguously determine. If the number of mismatches is at most $s_ap_{USD}L$, where $p_{USD}$ is the USD success probability, then Bob accepts.
 \end{description}
 
-The use of the multiport is to defend against repudiation; even if Alice sends $|\alpha\rangle$ to Bob and $|\beta\rangle$ to Charlie such that $\alpha \neq \beta$, only using photons that come out the signal outputs of the multiport ensures that both recipients finish with the state $|(\alpha + \beta)/2\rangle$. Because they have the same reduced state, on average they will see the same number of mismatches. Alice's best strategy has probability $(s_b + s_c)p_{USD}/2$ of making Bob and Charlie disagree on a single bit of the key, which leads to her probability of successful repudiation being negligible in terms of the difference between Charlie and Bob's thresholds, $p_{USD}$ and $L$.
+The multiport prevents repudiation; even if Alice sends $|\alpha\rangle$ to Bob and $|\beta\rangle$ to Charlie, postselecting on photons that come out the signal outputs of the multiport ensures that both recipients have the state $|(\alpha + \beta)/2\rangle$. Alice's best strategy is to send a signature where the number of mismatches is halfway between the authentication and verification thresholds, which leads to her probability of successful repudiation being negligible in terms of $s_v - s_a$, $p_{USD}$ and $L$.
 
-In order for Bob -- or alternatively Charlie -- to successfully forge a message, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output \footnote{Note that if all parties are honest, the state at both null outputs is the vacuum state, so few if any photons should be seen.}.
+In order for Bob to forge a message, Bob must guess the bits that he was not able to unambiguously get from Alice, yet Charlie was able to. The probability of this is negligible in terms of $s_c, p_{USD}$ and $L$. Bob's other option is to send wrong states through the multiport, which Charlie can also defend against by aborting if too many photons are seen through his null output.
 
 \subsection{Quantum Digital Signatures using QKD}
 \label{ssec:qds-using-qkd}
 
-Wallden et al.\ \cite{PhysRevA.91.042304} developed in 2015 an improved signature scheme that no longer required the use of a multiport for Bob and Charlie. This scheme utilises quantum state elimination \cite{PhysRevA.89.022336} to build trust in Alice's signature. The protocol is explained below, using $|0\rangle, |1\rangle, |+\rangle = (|0\rangle + |1\rangle)/\sqrt{2}, |-\rangle = (|0\rangle - |1\rangle)/\sqrt{2}$ are the BB84 \cite{BB84} states, and $0 \leq s_b < s_c < 1$:
+Wallden et al.\ \cite{PhysRevA.91.042304} developed an improved QDS that didn't require a multiport. This scheme uses quantum state elimination \cite{PhysRevA.89.022336} to build trust in Alice's signature. The protocol is explained below, using $|0\rangle, |1\rangle, |+\rangle = (|0\rangle + |1\rangle)/\sqrt{2}, |-\rangle = (|0\rangle - |1\rangle)/\sqrt{2}$ as the BB84 \cite{BB84} states:
 
 \begin{description}
-\item[Key Generation]For a future one-bit message, Alice generates pairs $(k^0_l, k^1_l), 0 \leq l < L$ where $L$ is a security parameter and $k \in \{0, 1, +, -\}$ is chosen at random. She then generates two copies of the states $\bigotimes_{l=0}^{L-1}|k^0_l\rangle$ and $\bigotimes_{l=0}^{L-1}|k^1_l\rangle$ to act as her verification keys.
-\item[Key Distribution]Alice sends copies of the verification keys to Bob and Charlie. Bob (resp.\ Charlie) picks between $L/2-r$ and $L/2+r$ indices $0 \leq l < L$ and bits $b \in \{0, 1\}$ for some $r$ and sends $(l, b, |k^b_l\rangle)$ to Charlie (resp.\ Bob), aborting if he receives a number of tuples outside of that limit. Bob and Charlie then measure all the qubits they have in either the $\{|0\rangle, |1\rangle\}$ or $\{|+\rangle\, |-\rangle\}$ basis. Bob and Charlie use the outcome of these measurements to derive what values they know the key \textit{cannot} be.
+\item[Key Generation]Alice generates pairs $(k^0_l, k^1_l), 0 \leq l < L$ where $k \in \{0, 1, +, -\}$ is chosen at random. She then generates two copies of the states $\bigotimes_{l=0}^{L-1}|k^0_l\rangle$ and $\bigotimes_{l=0}^{L-1}|k^1_l\rangle$ to act as her verification keys.
+\item[Key Distribution]Alice sends copies of the verification keys to Bob and Charlie, who pick between $L/2-r$ and $L/2+r$ indices $0 \leq l < L$ and bits $b \in \{0, 1\}$ for some $r$ and sends $(l, b, |k^b_l\rangle)$ to the other party, aborting if they receive a number of tuples outside that limit. Bob and Charlie then measure all their qubits in either the $\{|0\rangle, |1\rangle\}$ or $\{|+\rangle\, |-\rangle\}$ bases. Bob and Charlie use the outcome of these measurements to note what states the key \textit{cannot} be.
 \item[Message Signing]For a message $b$, Alice sends the signed message $(b, k^b_0k^b_1...k^b_{L-1})$.
-\item[Message Verification]To verify the signed message $(b, k^b_0k^b_1...k^b_{L-1})$, Bob (resp.\ Charlie) checks how many of the symbols in the signing key are in the set of values they eliminated from measurement and accepts if this number is smaller than $s_bL$ (resp.\ $s_cL$).
+\item[Message Verification]To verify the signed message $(b, k^b_0k^b_1...k^b_{L-1})$, Bob checks how many of the symbols in the signing key are in the set of values they eliminated from measurement and accepts if this number is smaller than $s_aL$.
 \end{description}
 
-Because Alice does not know which qubits Bob measured and which he forwarded to Charlie (and vice versa), she gains no repudiation advantage from sending different states to the two receivers. Her best strategy is to send a signed message which has $L(s_c - s_b)L/2$ mismatches with the actual signature, which has a negligible chance of success in terms of $L$. There is also a negligible chance of forgery, as even if Bob faked the qubits he was forwarding on to Charlie, he would still need to guess the qubits that Charlie didn't forward on to him.
+Because Alice does not know which qubits Bob measured and which he forwarded to Charlie (and vice versa), she gains no repudiation advantage from sending different states to them. There is also a negligible chance of forgery, as even if Bob faked the qubits he forwarded to Charlie, he would still need to guess the qubits that Charlie \textit{didn't} forward to him.
 
-\subsection{Removing the need for Authenticated Quantum Channels}
+\subsection{Authenticated Quantum Channels}
 \label{ssec:insecure-qc}
 
-2016 was when we finally saw quantum digital signatures proposed without authenticated quantum channels, in two papers: one by Yin, Fu and Chen \cite{PhysRevA.93.032316} and one published a week later by Amiri et al.\ \cite{PhysRevA.93.032325}. The latter paper will be the focus of this section.
+QDSs were finally proposed without authenticated quantum channels in two papers: one by Yin, Fu and Chen \cite{PhysRevA.93.032316} and one by Amiri et al.\ \cite{PhysRevA.93.032325}. The latter paper will be the focus of this section.
 
-This signature scheme relies on a key generation protocol; a protocol undertaken between Alice and each receiver independently. Based upon BB84 \cite{BB84}, the key generation protocol used between Alice and, for example, Bob is described below:
+This signature scheme relies on a key generation protocol (KGP). Based upon BB84 \cite{BB84}, the KGP between Alice and Bob is described below:
 
 \begin{enumerate}
-\item Bob generates qubits in either $|0\rangle, |1\rangle, |+\rangle \text{ or } |-\rangle$ states and forwards these states on to Alice.
+\item Bob generates qubits in either $|0\rangle, |1\rangle, |+\rangle \text{ or } |-\rangle$ states and forwards these states to Alice.
 \item Alice measures each state in either the $X$ or $Z$ basis, noting her chosen basis and results.
-\item Alice and Bob publicly announce their choice of bases and throw out any results that were measured in different bases. Steps 1-3 are repeated until enough bits are produced.
+\item Alice and Bob publicly announce their choice of bases and keep results that were measured in the same basis. Steps 1-3 are repeated until enough shared bits are produced.
 \item Bob divides his key up into four parts of equal size:
 \begin{itemize}
-\item The first set of bits, $V$, are all results from $X$ basis measurements, and will be compared with the corresponding bits from Alice's measurements to see how much correlation there is between their bits.
-\item The second set of bits, $Z$, are all results from $Z$ basis measurements, and will be compared with Alice's corresponding bits to determine how much of their communications has been eavesdropped upon.
-\item The third set of bits, $C^B$ are bits that are forwarded on to Charlie.
-\item The fourth set of bits, $B$ are the bits that Bob keeps for his own private key. All other bits are discarded by both him and Alice.
+\item The first part, $V$, are results from $X$ basis measurements, and will be compared with the corresponding bits from Alice to see how much correlation they have.
+\item The second part, $Z$, are results from $Z$ basis measurements, and will be compared with Alice's corresponding bits to determine eavesdropper activity.
+\item The third part, $C^B$ are bits that are forwarded on to Charlie.
+\item The fourth part, $B$ are the bits that Bob keeps for his own private key. Alice and Bob discard the bits in the first two parts.
 \end{itemize}
 \item If there is not enough correlation or the difference in the amount of correlation between the $V$ and $Z$ bits is too high, then the protocol is aborted.
-\item Otherwise, Bob and Charlie exchange their parts of the keys through a secure \& authenticated classical channel.
+\item Otherwise, Bob and Charlie exchange their parts of the keys through a secure classical channel.
 \end{enumerate}
 
-This protocol allows Alice to generate highly correlated keys with the recipients of her message. We use this to develop a digital signature scheme as follows, with $0 \leq s_b < s_c < 1/2$ and $L$ as our security parameter:
+This protocol allows Alice to generate highly correlated keys with the recipients. We use this to construct a QDS below:
 
 \begin{description}
 \item[Key Generation/Distribution]Bob and Charlie use the key generation protocol to generate two $L$-bit keys with Alice, half of each key being exchanged with the other party. Alice's copies of the keys are denoted $A^B_0, A^B_1, A^C_0 \text{ and } A^C_1$, where $B$ (resp.\ $C$) denotes Bob (resp.\ Charlie). Bob and Charlie have their own keys with Alice $B_0, B_1$ \& $C_0, C_1$ and their keys from each other $B^C_0, B^C_1$ \& $C^B_0, C^B_1$, respectively.
-\item[Message Signing]To sign a bit $b$, Alice sends the message $(b, A^B_b, A^C_b)$.
-\item[Message Verification]To verify a sent message message $(b, A^B_b, A^C_b)$, Bob checks the number of bits in $A^B_b$ that mismatch $B_b$ and the number of bits in $A^C_b$ that mismatch $B^C_b$. If the total number of mismatches is below $s_bL/2$ then the message is rejected. Otherwise the message is accepted.
+\item[Message Signing]To sign a bit $b$, Alice sends $(b, A^B_b, A^C_b)$.
+\item[Message Verification]Given $(b, A^B_b, A^C_b)$, Bob checks the number of mismatches between $A^B_b$ and $B_b$ and the number of mismatches between $A^C_b$ and $B^C_b$. If the total number of mismatches is above $s_aL/2$ then the message is rejected. Otherwise the message is accepted.
 \end{description}
 
-This signature is a more general version of a protocol from 2015. While the protocol described above uses a key generation protocol that creates correlated bit strings between parties, protocol P2 in \cite{PhysRevA.91.042304} uses already shared keys which perfectly match.
+This signature is a more general version of protocol P2 from \cite{PhysRevA.91.042304}. While the protocol described above uses a key generation protocol that creates correlated bit strings between parties, protocol P2 uses already shared keys which perfectly match.
 
 Like the protocol in SEC.\ \ref{ssec:qds-using-qkd}, security against repudiation is offered as Alice does not know which bits of their respective keys Bob and Charlie passed on to each other.
 
-For Bob to forge a message to send to Charlie, he needs to guess the values of the bits that Charlie did not forward on to him, which is negligible for the same reason as in SEC.\ \ref{ssec:qds-using-qkd}. Bob has the highest chance of success if he eavesdrops on the key generation protocol between Alice and Charlie, which he now can given that the channel is not authenticated. If Bob regularly guesses the wrong qubit to forward to Alice, this will result in low correlations between Alice and Charlie's measurements in the $X$ or $Z$ basis. Thus when Alice and Charlie look at the correlations between their $V$ and $X$ parts of their keys, they will either find low correlations in $V$ or a significant difference between the number of correlations in $V$ and the number of correlations in $X$. Either way, the protocol will be aborted. Thus the probability of a successful forgery is negligible.
+For Bob to forge a message to send to Charlie, he needs to guess the values of the bits that Charlie did not forward on to him, which is negligible for the same reason as in SEC.\ \ref{ssec:qds-using-qkd}. Bob has the highest chance of success if he eavesdrops on the key generation protocol between Alice and Charlie, which he now can given that the channel is not authenticated. If Bob regularly guesses the wrong qubit to forward to Alice, this will result in low correlations between Alice and Charlie's measurements in the $X$ or $Z$ basis. Thus when Alice and Charlie look at the correlations between their $V$ and $X$ parts of their keys, they will either find low correlations in $V$ or a large difference between the number of correlations in $V$ and the number of correlations in $X$. Either way, the protocol will be aborted.
 
 \section{Experimental Achievements}
 \label{sec:experiments}
 
-While many of these results have proven theoretically interesting, there have been a number of practical difficulties. However, experimental results have been developed using compromises. A selection of these results are discussed in this section.
+Although there are a number of difficulties in these QDSs, experimental results have been developed with compromises. Some of these results are discussed below.
 
 One of the earliest experimental results was in 2012 by Clarke et al.\ \cite{CCD+12}. This experiment encoded qubits in the phase of coherent light, created using an attenuated pulsed laser at an $850 \text{ nm}$ wavelength. The states created were of the form $\{|\alpha e^{2i\pi p/N}\rangle| p = 0,1,...,N\}$ by use of a Mach-Zender interferometer with a controllable phase modulator.
 
-Rather than implement a distributed SWAP test as originally proposed by Gottesman and Chuang, Alice's pulsed laser is sent through a beamsplitter, the outputs of which are sent through a multiport to Bob and Charlie. A phase modulator was placed between Alice's beamsplitter output and Bob's input port of the multiport in order to test Alice's ability to successfully repudiate a message. To avoid the use of quantum memory, Bob and Charlie measured their photons immediately and noted their result and measurement basis by use of a Mach-Zender interferometer and a phase modulator. When Alice sends her message and signature including a classical description of the state, Bob and Charlie can then check if it is consistent with their measurement results.
+Rather than implement a distributed SWAP test, Alice's pulsed laser is sent through a beamsplitter, the outputs of which are passed through a multiport to Bob and Charlie. A phase modulator was placed between Alice's beamsplitter output and Bob's multiport input to test repudiation. To avoid the use of quantum memory, Bob and Charlie measured their received photons immediately using a Mach-Zender interferometer, phase modulator and Silicon Single Avalanche Photo-Diode (Si-SAPD), noting basis and result. When Alice sends her message and a classical description of the signature state, Bob and Charlie check if it is consistent with their measurement results.
 
-When results were taken, Clarke et al.\ noted that the gap between their probability of a successful signature -- assuming honest players -- and the probability of a successful forgery by Bob is $g = 8.03 \times 10^{-4} \pm 0.3 \times 10^{-4}$. The primary reasons for a gap this small were the low count rates at the detectors, which had losses of $7.5 \text{ dB}$ at the multiport null-ports and $7.1 \text{ dB}$ at Bob and Charlie's measurements. The overall detection efficiency of the experiment ranged between $36\%$ and $42\%$.
+Clarke et al.\ saw that the gap between the probability of a successful signature -- assuming honest players -- and the probability of a successful forgery by Bob for their system was $g = 8.03 \times 10^{-4} \pm 0.3 \times 10^{-4}$. The primary reasons for a gap this small were the low count rates at the detectors, which had losses of $7.5 \text{ dB}$ at the multiport null-ports and $7.1 \text{ dB}$ during measurement. The overall detection efficiency of the experiment ranged from $36-42\%$.
 
-A later paper, implementing the signature from SEC.\ \ref{ssec:no-qmem}, was written by Collins et al.\ in 2014 \cite{PhysRevLett.113.040502}. This experiment largely used the same setup as in \cite{CCD+12}, but Bob and Charlie's measurements were now broken up into two Mach-Zender interferometers separated by a beamsplitter: one to measure $\{|\alpha\rangle, |\alpha e^{i\pi}\rangle\}$ and one to measure $\{|\alpha e^{i\pi/2}\rangle, |\alpha e^{3i\pi/2}\}$. These were the four qubit encodings used by Alice in this implementation of the scheme. Another difference is that Collins et al.\ used unambiguous state elimination to detect invalid signatures.
+A later paper, by Collins et al.\ \cite{PhysRevLett.113.040502}, implemented the signature from SEC.\ \ref{ssec:no-qmem}. This experiment largely used the same setup as \cite{CCD+12}, but Bob and Charlie's measurements were now two Mach-Zender interferometers separated by a beamsplitter: one to measure $\{|\alpha\rangle, |\alpha e^{i\pi}\rangle\}$ and one to measure $\{|\alpha e^{i\pi/2}\rangle, |\alpha e^{3i\pi/2}\rangle\}$. These were the qubit encodings used by Alice in this experiment. Another difference is that Collins et al.\ used unambiguous state elimination for checking the signatures.
 
-Sadly, the gap proved to be even smaller in this experiment, at a maximum of $1.2 \time 10^{-6}$. For this protocol to fail with probability at most $0.01\%$ for a one-bit message, this would require a signature key of $5.1 \times 10^{13}$ qubits. This is far too large to be practical. To improve this number, suggestions made by the authors include finding optimal photon numbers for state elimination, switching to protocols that do not require a multiport, and improving clock speeds. The last of these tasks was not possible due to limitations in the time-tagging.
+Sadly, the gap was even smaller, at most $1.2 \time 10^{-6}$. For this protocol to fail with probability at most $0.01\%$ for a one-bit message, this would require a signature key of $5.1 \times 10^{13}$ qubits. To reduce this number, suggestions made by the authors include finding optimal photon numbers for state elimination, switching to protocols that do not require a multiport, and increasing clock speeds.
 
-The final paper discussed in this essay was from 2016 by Donaldson et al.\ \cite{PhysRevA.93.012329}, where they demonstrated digital signatures across distances ranging from $500-2000\text{m}$ of fibre. The distance limitations with the previous experiments were caused by the multiport, which restricted the transmission distance to 5m. In this paper, the multiport is removed and repudiation is resolved by Bob \& Charlie taking measurements on their states and then picking results at random to send to each other.
+The final paper was by Donaldson et al.\ \cite{PhysRevA.93.012329}, where they demonstrated a QDS across $500-2000\text{ m}$ of fibre. The distance limitations with the previous experiments were caused by the multiport, which restricted the transmission distance to $5\text{ m}$. In this paper, the multiport is removed and repudiation is stopped by Bob \& Charlie taking measurements and forwarding results to each other.
 
-Experimental results showed that when the sender and receiver were separated by 500m of fibre, the gap was at most $2.86 \times 10^{-4}$. For a failure probability of at most 0.01\%, this requires a signature of $1.93 \times 10^{9}$ qubits. At the 100MHz pulse rate this experiment was operating at, one signature would take approximately 20s. This signature length increased as the distance increased, but at 2000m was still four orders of magnitude smaller than what was required in \cite{PhysRevLett.113.040502}, though still not practical in comparison to QKD or classical digital signatures. Suggested improvements include changing to 1550 nm wavelength lasers, which would have lower losses in fibres -- $0.2\text{ dB km}^{-1}$ instead of $2.2\text{ dB km}^{-1}$ -- as well as the use of better detectors, such as semiconductor \cite{0957-0233-21-1-012002} or even superconducting \cite{0953-2048-25-6-063001} technologies.
+When the sender and receiver were separated by 500m of fibre, the gap was at most $2.86 \times 10^{-4}$. For a failure probability of at most 0.01\%, this requires a signature of $1.93 \times 10^{9}$ qubits. At the 100MHz pulse rate this experiment was operating at, one signature would take approximately 20s. This signature length increased as the distance increased, but at 2000m was still four orders of magnitude smaller than what was required in \cite{PhysRevLett.113.040502}. But this is still not practical in comparison to QKD or classical digital signatures. Suggested improvements include changing to 1550 nm wavelength lasers, which have lower losses in telecommunications fibres -- $0.2\text{ dB km}^{-1}$ instead of $2.2\text{ dB km}^{-1}$ -- as well as better detectors, such as semiconductor \cite{0957-0233-21-1-012002} or even superconducting \cite{0953-2048-25-6-063001} detectors.
 
 \section{Conclusion and Discussion}
 \label{sec:conclusion}
 
-While quantum key distribution has the potential to be significantly beneficial over classical encryption alone, secrecy is only a mere facet of cryptography, and a minor one at that. To quote the same CESG white paper from before \cite{CESG16}, ``Ubiquitous on-demand modern services [...] rely more on authentication and integrity mechanisms, such as digital signatures, than on encryption.'' Although the outlook of the white paper in general does not reflect the current world of research, the following point is made clear: Secrecy alone is not enough.
+While quantum key distribution has the potential to be significantly beneficial over classical encryption alone, secrecy is only a mere facet of cryptography. To quote the CESG white paper \cite{CESG16}, ``modern services [...] rely more on authentication and integrity mechanisms, such as digital signatures, than on encryption.'' Secrecy is not enough.
 
-For a technology that was only proposed in 2001, quantum digital signatures have come a long way. While Gottesman and Chuang's original scheme \cite{quant-ph/0105032} had many practical limitations, many of these have now been fixed, particularly following the work of Yin, Fu and Chen \cite{PhysRevA.93.032316} and Amiri et al.\ \cite{PhysRevA.93.032325}. But there is still room for improvement on these theoretical protocols. While both protocols do not require quantum channel authentication, Amiri et al.\ is still dependent on authenticated classical channels. Yin, Fu and Chen's protocol does not use authenticated classical channels, but it is much less certain how the protocol will scale with participants, particularly in order to prevent collusion attacks.
+Despite only being proposed in 2001, QDSs have come a long way. While Gottesman and Chuang's original scheme \cite{quant-ph/0105032} had many practical limitations, many of these have now been fixed, particularly following the work of Yin, Fu and Chen \cite{PhysRevA.93.032316} and Amiri et al.\ \cite{PhysRevA.93.032325}. But these protocols can still be improved. While both protocols do not require quantum channel authentication, Amiri et al.'s is still dependent on authenticated classical channels, but it is much less certain how Yin, Fu and Chen's will scale with participants, particularly to prevent collusion attacks.
 
-Experimentally, proof of principle digital signatures have been demonstrated using phase-encoded coherent states of light a number of times. However, the length of keys required in order to currently provide safe levels of security is impractical, taking $20\text{s}$ of time in order to establish and share the keys for signing and verifying a single bit over half a kilometre. By incorporating more recent advances in optical devices such as semiconductor or superconducting single photon detectors, quantum digital signatures will hopefully advance to a level on par with QKD.
+Experimentally, proof of principle QDSs have been demonstrated using phase-encoded coherent states of light. However, the length of keys required in order to currently provide safe levels of security is impractical, taking $20\text{ s}$ to establish and share the keys for signing and verifying a single bit. By incorporating advances in optical devices such as improved single photon detectors, QDSs will hopefully advance to being on par with QKD.
 
 \bibliography{qde}% Produces the bibliography via BibTeX.
 
