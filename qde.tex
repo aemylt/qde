@@ -74,17 +74,17 @@
 \section{Introduction}
 \label{sec:intro}
 
-Cryptography is the study of secure communications between multiple parties, often called Alice and Bob. In classical cryptography, this security is guaranteed through the assumed hardness of certain problems. RSA \cite{Rivest:1978:MOD:359340.359342}, for example, is secure assuming that factoring integers is hard. Unfortunately, these have no strict guarantees. And even worse, some have been shown to be easy in both theory \cite{Shor97} and experimental work \cite{MLL+12, 1604.05796} using quantum computers.
+Cryptography studies secure communications between parties, often called Alice and Bob. In classical cryptography, this security is guaranteed through the assumed hardness of problems. RSA \cite{Rivest:1978:MOD:359340.359342}, for example, assumes that factoring integers is hard. Unfortunately, these have no strict guarantees. Even worse, some have been proven easy in both theory \cite{Shor97} and practice \cite{MLL+12, 1604.05796} on quantum computers.
 
-Thankfully, while quantum computers break secrecy, they can also fix it. Quantum Key Distribution (QKD) protocols such as BB84 \citep{BB84} can information theoretically securely establish a shared key. Once Alice and Bob have a shared key, they can use a one-time pad to send messages with perfect secrecy. This means that it is impossible for an eavesdropper, Eve, to learn anything about what was said. This has also been demonstrated experimentally \cite{Bennett1992} and there are now companies such as ID Quantique \footnote{\url{http://www.idquantique.com/}} offering commercial products for QKD.
+While quantum computers break secrecy, they can also fix it. Quantum Key Distribution (QKD) protocols such as BB84 \citep{BB84} can securely establish a shared key. Once Alice and Bob have a shared key, they can send messages with perfect secrecy. Thus it is impossible for an eavesdropper, Eve, to learn anything about their communications. This has also been demonstrated experimentally \cite{Bennett1992, Sibson:15} and now companies such as ID Quantique \footnote{\url{http://www.idquantique.com/}} offer commercial QKD.
 
-But alas, secrecy is only one aspect of cryptography. Even if Alice and Bob have guaranteed secrecy, that still doesn't stop Eve from sending a message of random gibberish to Bob while pretending to be Alice. Even worse, Eve might simply pretend to be Bob throughout the whole QKD protocol, and thus fool Alice into sending her the message intended for Bob. This is one of the arguments laid out in a white paper by CESG, which concludes that ``CESG does not endorse QKD for government or military applications, and advises against replacing any existing public key solutions with QKD for commercial applications'' \cite{CESG16}.
+But alas, secrecy is only part of cryptography. Even if Alice and Bob have perfect secrecy, Eve could still send a message of random gibberish to Bob while pretending to be Alice. Alternatively, Eve might simply pretend to be Bob throughout the whole QKD protocol, and thus fool Alice into sending her the message intended for Bob. This is one of the arguments in a white paper which concluded that ``CESG does not endorse QKD for government or military applications, and advises against replacing any existing public key solutions with QKD for commercial applications'' \cite{CESG16}.
 
-The extra precautions required to prevent the above attacks are digital signatures. Like how someone signs a letter, a digital signature is an extra piece of data in a message to indicate who wrote it. And like classical encryption schemes, classical digital signatures rely on the hardness of certain problems.
+The extra precautions required to prevent these attacks are digital signatures. Like how someone signs a letter, a digital signature is additional data to indicate who wrote a message. And like classical encryption, classical signatures rely on assumed hardness.
 
-Based on the improvements in secrecy, one might ask if quantum physics can also benefit digital signatures. This is the subject that this essay will explore. In SEC.\ \ref{sec:def}, we offer a definition of digital signatures. SEC.\ \ref{sec:lamport} describes the best known classical digital signature, followed by quantum digital signatures (QDSs) in SEC.\ \ref{sec:qds} and experimentally in SEC.\ \ref{sec:experiments}. Finally, we conclude with some points of discussion in SEC.\ \ref{sec:conclusion}.
+Based on the improvements in secrecy, one might ask if quantum physics can also benefit digital signatures. This is the subject of this essay. In SEC.\ \ref{sec:def}, we offer a definition of digital signatures. SEC.\ \ref{sec:lamport} describes the best known classical digital signature, followed by quantum digital signatures (QDSs) in SEC.\ \ref{sec:qds}. Experimental results are highlighted in SEC.\ \ref{sec:experiments}. Finally, we conclude with some points of discussion in SEC.\ \ref{sec:conclusion}.
 
-\section{Definition of Digital Signatures}
+\section{Preliminaries and Definition of Digital Signatures}
 \label{sec:def}
 
 \begin{definition}
@@ -175,10 +175,16 @@ Improvements were initially made by Dunjko, Wallden and Andersson \cite{PhysRevL
 
 \begin{description}
 \item[Key Generation]Alice generates two $L$-bit keys $k^0, k^1$ at random for some security parameter $L$, which act as Alice's signing keys. Alice then generates states of the form $|(-1)^{k^b_l}\alpha\rangle$ for $l \in \{0,...,L-1\}$ and $b \in \{0, 1\}$, where $\alpha$ is a positive real number known between all parties and $k^b_l$ is the $l$-th bit of $k^b$. These quantum states will act as the verification key.
-\item[Key Distribution]For two recipients, Bob and Charlie, Alice generates a copy of the above state for each participant. Bob and Charlie run their states together through a multiport. For states which come out of the signal port, they then use Unambiguous State Discrimination (USD) \cite{Ivanovic1987257} to distinguish the states $\{|-\alpha\rangle, |\alpha\rangle\}$, and for each unambiguous state $|(-1)^{k^b_l}\alpha\rangle$ note the value of $k^b_l$, the index $l$ and whether $b = 0$ or $1$.
+\item[Key Distribution]For two recipients, Bob and Charlie, Alice generates a copy of the above state for each participant. Bob and Charlie run their states together through a multiport (see FIG.\ \ref{fig:multiport}). For states which come out of the signal port, they then use Unambiguous State Discrimination (USD) \cite{Ivanovic1987257} to distinguish the states $\{|-\alpha\rangle, |\alpha\rangle\}$, and for each unambiguous state $|(-1)^{k^b_l}\alpha\rangle$ note the value of $k^b_l$, the index $l$ and whether $b = 0$ or $1$.
 \item[Message Signing]To sign a message $b$, Alice sends the message $(b, k^b)$ to Bob.
 \item[Message Verification]To verify a message-signature pair $(b, k^b)$, Bob checks the bits of $k^b$ sent to him with the bits he was able to unambiguously determine. If the number of mismatches is at most $s_ap_{USD}L$, where $p_{USD}$ is the USD success probability, then Bob accepts.
 \end{description}
+
+\begin{figure}
+\includegraphics[width=\linewidth]{multiport.png}
+\caption{Design of a multiport. Note if $|\alpha\rangle = |\beta\rangle$ then $|(\alpha - \beta)/2\rangle = |0\rangle$, thus we would expect the vaccum state from the null port. Figure from \cite{PhysRevLett.112.040502}.}
+\label{fig:multiport}
+\end{figure}
 
 The multiport prevents repudiation; even if Alice sends $|\alpha\rangle$ to Bob and $|\beta\rangle$ to Charlie, postselecting on photons that come out the signal outputs of the multiport ensures that both recipients have the state $|(\alpha + \beta)/2\rangle$. Alice's best strategy is to send a signature where the number of mismatches is halfway between the authentication and verification thresholds, which leads to her probability of successful repudiation being negligible in terms of $s_v - s_a$, $p_{USD}$ and $L$.
 
@@ -232,7 +238,7 @@ This signature is a more general version of protocol P2 from \cite{PhysRevA.91.0
 
 Like the protocol in SEC.\ \ref{ssec:qds-using-qkd}, security against repudiation is offered as Alice does not know which bits of their respective keys Bob and Charlie passed on to each other.
 
-For Bob to forge a message to send to Charlie, he needs to guess the values of the bits that Charlie did not forward on to him, which is negligible for the same reason as in SEC.\ \ref{ssec:qds-using-qkd}. Bob has the highest chance of success if he eavesdrops on the key generation protocol between Alice and Charlie, which he now can given that the channel is not authenticated. If Bob regularly guesses the wrong qubit to forward to Alice, this will result in low correlations between Alice and Charlie's measurements in the $X$ or $Z$ basis. Thus when Alice and Charlie look at the correlations between their $V$ and $X$ parts of their keys, they will either find low correlations in $V$ or a large difference between the number of correlations in $V$ and the number of correlations in $X$. Either way, the protocol will be aborted.
+For Bob to forge a message, he needs to guess the bits that Charlie kept. Bob has the highest chance of success if he eavesdrops on the key generation protocol between Alice and Charlie, which he can as the quantum channel is insecure. If Bob regularly guesses the wrong qubit to forward to Alice, this will result in low correlations between Alice and Charlie's measurements. Thus when Alice and Charlie look at their correlations, they will either find low correlations in $X$ measurements or a large difference between the number of correlations in $X$ and $Z$. Either way, the eavesdropping will be spotted.
 
 \section{Experimental Achievements}
 \label{sec:experiments}
